@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>シナモロールのおへや</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family:'Hiragino Maru Gothic Pro','BIZ UDPGothic',sans-serif;
+  background:linear-gradient(135deg,#a8d8ea,#ffd3e8);
+  display:flex; justify-content:center; align-items:center;
+  min-height:100vh; padding:16px;
+}
+
+/* ── ゲームフレーム 600×480 (5:4) ── */
+#game {
+  width:600px; height:480px; position:relative; overflow:hidden;
+  border-radius:16px; box-shadow:0 12px 40px rgba(0,0,0,0.4);
+  border:3px solid #7bb8e8;
+}
+
+/* ── シーン ── */
+.scene { width:100%; height:100%; position:absolute; inset:0; display:none; }
+.scene.active { display:block; }
+.bg { width:100%; height:100%; object-fit:cover; object-position:center top; display:block; }
+
+/* ── ステータスバー ── */
+.status-bar {
+  position:absolute; top:0; left:0; right:0; height:34px;
+  display:flex; justify-content:space-between; align-items:center;
+  padding:0 12px; background:rgba(255,255,255,0.88);
+  border-bottom:2px solid #d0eaff; z-index:20;
+}
+.loc-badge { background:#7bb8e8; color:#fff; padding:3px 12px; border-radius:10px; font-size:12px; font-weight:bold; }
+.dt-money  { color:#e8a000; font-size:12px; font-weight:bold; }
+
+/* ── ステータスゲージ ── */
+.stat-bars {
+  position:absolute; top:38px; right:8px;
+  display:flex; flex-direction:column; gap:3px; z-index:15;
+}
+.sbc { display:flex; align-items:center; gap:3px; font-size:10px;
+  background:rgba(255,255,255,0.88); border-radius:8px; padding:2px 6px; }
+.sb-bg { width:64px; height:8px; background:#ddd; border-radius:4px; overflow:hidden; }
+.sb-fill { height:100%; border-radius:4px; transition:width .5s; }
+.sb-mood   { background:#ff9a3c; }
+.sb-hunger { background:#5cc85c; }
+
+/* ══════════════════════════════════════════
+   キャラクター 3Dシステム
+   ラッパー：マウス傾き担当
+   img    ：浮遊・バウンス担当
+   影     ：奥行き表現
+   ══════════════════════════════════════════ */
+.cinna-wrap {
+  position:absolute;
+  bottom:100px; left:50%;
+  /* JS が上書き。初期値 */
+  transform: translateX(-50%);
+  transform-style: preserve-3d;
+  cursor:pointer;
+  z-index:10;
+}
+.cinna-wrap.park { bottom:90px; left:40%; }
+
+.cinna-char {
+  width:185px;
+  display:block;
+  animation: float3d 2.9s ease-in-out infinite;
+  pointer-events:none;
+  will-change:transform,filter;
+}
+.cinna-wrap.park .cinna-char { width:175px; }
+
+/* 地面の影 */
+.cinna-shadow {
+  position:absolute;
+  bottom:-10px; left:50%;
+  transform:translateX(-50%);
+  width:130px; height:22px;
+  background:radial-gradient(ellipse, rgba(0,0,0,0.22) 0%, transparent 70%);
+  border-radius:50%;
+  animation: shadow3d 2.9s ease-in-out infinite;
+  pointer-events:none;
+}
+
+/* ── 浮遊アニメ（スクワッシュ＆ストレッチ） ── */
+@keyframes float3d {
+  0%,100% {
+    transform:translateY(0)    scaleX(1)    scaleY(1);
+    filter:drop-shadow(0 12px 8px rgba(0,0,0,0.22));
+  }
+  30% {
+    transform:translateY(-10px) scaleX(0.97) scaleY(1.05);
+    filter:drop-shadow(0 18px 13px rgba(0,0,0,0.13));
+  }
+  50% {
+    transform:translateY(-16px) scaleX(0.94) scaleY(1.08);
+    filter:drop-shadow(0 24px 18px rgba(0,0,0,0.07));
+  }
+  70% {
+    transform:translateY(-10px) scaleX(0.97) scaleY(1.05);
+    filter:drop-shadow(0 18px 13px rgba(0,0,0,0.13));
+  }
+}
+
+/* 影：浮いたとき縮む */
+@keyframes shadow3d {
+  0%,100% { transform:translateX(-50%) scaleX(1);    opacity:0.28; }
+  50%      { transform:translateX(-50%) scaleX(0.5);  opacity:0.08; }
+}
+
+/* ── バウンス（話す・嬉しい） ── */
+@keyframes bounce3d {
+  0%   { transform:translateY(0)    scaleX(1.07) scaleY(0.88); filter:drop-shadow(0 6px 4px rgba(0,0,0,0.3)); }
+  15%  { transform:translateY(-10px) scaleX(0.96) scaleY(1.07); }
+  40%  { transform:translateY(-26px) scaleX(0.91) scaleY(1.12); filter:drop-shadow(0 30px 20px rgba(0,0,0,0.05)); }
+  68%  { transform:translateY(-8px)  scaleX(0.97) scaleY(1.04); }
+  84%  { transform:translateY(-2px)  scaleX(1.04) scaleY(0.93); filter:drop-shadow(0 8px 5px rgba(0,0,0,0.26)); }
+  100% { transform:translateY(0)    scaleX(1)    scaleY(1);    filter:drop-shadow(0 12px 8px rgba(0,0,0,0.22)); }
+}
+.cinna-char.do-bounce { animation:bounce3d 0.62s ease-in-out 2 !important; }
+
+/* ── シェイク（悲しい・辛い） ── */
+@keyframes shake3d {
+  0%,100% { transform:translateX(0)    rotateZ(0deg); }
+  18%     { transform:translateX(-9px)  rotateZ(-5deg); }
+  36%     { transform:translateX(9px)   rotateZ(5deg); }
+  54%     { transform:translateX(-7px)  rotateZ(-3deg); }
+  72%     { transform:translateX(7px)   rotateZ(3deg); }
+  90%     { transform:translateX(-3px)  rotateZ(-1deg); }
+}
+.cinna-char.do-shake { animation:shake3d 0.52s ease-in-out 2 !important; }
+
+/* ── ダイアログ ── */
+.dlg {
+  position:absolute; bottom:56px; left:12px; right:12px;
+  background:rgba(255,255,255,0.96); border:2px solid #7bb8e8;
+  border-radius:12px; padding:8px 14px; font-size:13px; color:#333;
+  line-height:1.65; min-height:48px; box-shadow:0 2px 10px rgba(0,0,0,0.12);
+  cursor:pointer; z-index:15;
+}
+.dlg::after { content:'▼'; position:absolute; bottom:5px; right:10px; font-size:9px; color:#7bb8e8; animation:blink 1s infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+/* ── アクションバー ── */
+.action-bar {
+  position:absolute; bottom:0; left:0; right:0; height:52px;
+  background:rgba(255,255,255,0.97); border-top:2px solid #d0eaff;
+  display:flex; align-items:center; justify-content:center;
+  gap:8px; padding:0 12px; z-index:20;
+}
+.btn {
+  padding:7px 15px; border:none; border-radius:20px;
+  font-family:inherit; font-size:13px; font-weight:bold; cursor:pointer;
+  transition:transform .1s,opacity .1s; white-space:nowrap;
+}
+.btn:active { transform:scale(0.91); }
+.btn-blue   { background:#7bb8e8; color:#fff; }
+.btn-orange { background:#ff9a3c; color:#fff; }
+.btn-green  { background:#5cc85c; color:#fff; }
+.btn-pink   { background:#ffb6c1; color:#555; }
+.btn-gray   { background:#ccc;    color:#555; }
+
+/* ── 公園アイコン ── */
+.park-icons {
+  position:absolute; top:40px; right:8px;
+  display:flex; flex-direction:column; gap:6px; z-index:15;
+}
+.icon-btn {
+  width:42px; height:42px; border-radius:8px; border:2px solid #ddd;
+  background:rgba(255,255,255,0.9); font-size:18px; cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+}
+.icon-btn:active { transform:scale(0.88); }
+.money-badge {
+  position:absolute; bottom:110px; left:12px;
+  background:rgba(255,255,255,0.93); border:2px solid #ddd;
+  border-radius:20px; padding:4px 14px;
+  font-size:13px; font-weight:bold; color:#e8a000; z-index:15;
+}
+
+/* ── オーバーレイ ── */
+.overlay {
+  position:absolute; inset:0;
+  background:rgba(0,0,0,0.52); display:none;
+  justify-content:center; align-items:center; z-index:100;
+}
+.overlay.active { display:flex; }
+.panel { background:#fff; border-radius:16px; padding:18px; width:310px; box-shadow:0 6px 28px rgba(0,0,0,0.3); }
+.panel h3 { text-align:center; color:#7bb8e8; margin-bottom:12px; font-size:15px; }
+
+.food-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px; }
+.food-item {
+  border:2px solid #ddd; border-radius:10px; padding:8px; text-align:center;
+  cursor:pointer; font-size:11px; transition:border-color .2s,background .2s; background:#fafafa;
+}
+.food-item:hover { border-color:#7bb8e8; background:#e8f4ff; }
+.food-emoji { font-size:28px; display:block; margin-bottom:3px; }
+
+.eat-panel { display:flex; flex-direction:column; align-items:center; gap:10px; }
+.eat-panel img { width:120px; }
+.eat-info { background:#fff8ee; border-radius:10px; padding:10px; display:flex; align-items:center; gap:12px; width:100%; }
+
+/* ── 通知 ── */
+.notif {
+  position:absolute; top:42px; left:50%; transform:translateX(-50%);
+  background:#fff; border:2px solid #ff9a3c; border-radius:20px;
+  padding:5px 18px; font-size:13px; color:#ff6600; font-weight:bold;
+  white-space:nowrap; opacity:0; z-index:200; pointer-events:none;
+}
+.notif.show { animation:notif-pop 2.2s forwards; }
+@keyframes notif-pop {
+  0%  { opacity:0; transform:translateX(-50%) translateY(-8px); }
+  15% { opacity:1; transform:translateX(-50%) translateY(0); }
+  75% { opacity:1; transform:translateX(-50%) translateY(0); }
+  100%{ opacity:0; transform:translateX(-50%) translateY(-8px); }
+}
+
+/* ── プロフィール ── */
+#scene-profile { background:#f0f8ff; }
+.prof-layout { position:absolute; top:34px; left:0; right:0; bottom:0; display:flex; }
+.prof-left {
+  width:180px; flex-shrink:0; background:linear-gradient(180deg,#d8eeff,#fff);
+  display:flex; flex-direction:column; align-items:center;
+  padding:16px 10px; gap:8px; border-right:2px solid #d0eaff;
+}
+.prof-left img { width:120px; }
+.prof-right { flex:1; overflow-y:auto; padding:8px; }
+.p-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.pcard { background:#fff; border-radius:10px; padding:10px; border:2px solid #b8ddf8; font-size:12px; color:#444; line-height:1.75; }
+.pcard h4 { color:#7bb8e8; font-size:12px; margin-bottom:4px; border-bottom:1px solid #e0f0ff; padding-bottom:3px; }
+.pcard.full { grid-column:span 2; }
+.bar-row { display:flex; align-items:center; gap:8px; margin-bottom:5px; }
+.bar-row:last-child { margin-bottom:0; }
+.bar-label { width:45px; font-size:11px; }
+.bar-bg { flex:1; height:10px; background:#eee; border-radius:5px; overflow:hidden; }
+.bar-fill { height:100%; border-radius:5px; transition:width .5s; }
+</style>
+</head>
+<body>
+<div id="game">
+  <div class="notif" id="notif"></div>
+
+  <!-- ══ マンション外観 ══ -->
+  <div class="scene active" id="scene-exterior">
+    <img class="bg" src="sozai/bg_mansion_chinna.png" alt="マンション外観">
+    <div class="status-bar">
+      <span class="loc-badge">トモコレマンション</span>
+      <span class="dt-money" id="ext-dt"></span>
+    </div>
+    <div class="dlg">
+      シナモロールのへやに行きますか？<br>
+      <span style="font-size:11px;color:#888;">「入る」ボタンでシナモロールのへやへ！</span>
+    </div>
+    <div class="action-bar">
+      <button class="btn btn-orange" style="font-size:15px;padding:10px 48px;" onclick="goScene('room')">入　る</button>
+    </div>
+  </div>
+
+  <!-- ══ 307号室 ══ -->
+  <div class="scene" id="scene-room">
+    <img class="bg" src="sozai/bg_room.png" alt="307号室" onclick="talkRoom()" style="cursor:pointer;">
+    <div class="status-bar">
+      <span class="loc-badge">307号室　シナモロール</span>
+      <span class="dt-money" id="room-dt"></span>
+    </div>
+    <div class="stat-bars">
+      <div class="sbc">😊 <div class="sb-bg"><div class="sb-fill sb-mood"   id="mood-bar"  ></div></div></div>
+      <div class="sbc">🍽 <div class="sb-bg"><div class="sb-fill sb-hunger" id="hunger-bar"></div></div></div>
+    </div>
+    <!-- キャラクター（ラッパー + 影 + img） -->
+    <div class="cinna-wrap" id="room-wrap" onclick="talkRoom()">
+      <div class="cinna-shadow"></div>
+      <img class="cinna-char" id="room-char" src="sozai/cinna_normal.png" alt="シナモロール">
+    </div>
+    <div class="dlg" id="room-dlg" onclick="talkRoom()">
+      シナモロールがいます<br>ごきげんのようです
+    </div>
+    <div class="action-bar">
+      <button class="btn btn-blue"   onclick="talkRoom()">💬 話す</button>
+      <button class="btn btn-orange" onclick="openFood()">🍽 たべもの</button>
+      <button class="btn btn-green"  onclick="goScene('park')">🌳 公園へ</button>
+      <button class="btn btn-pink"   onclick="goScene('profile')">📋 プロフィール</button>
+      <button class="btn btn-gray"   onclick="goScene('exterior')">🏠 もどる</button>
+    </div>
+  </div>
+
+  <!-- ══ 公園 ══ -->
+  <div class="scene" id="scene-park">
+    <img class="bg" src="sozai/bg_park.png" alt="公園" onclick="talkPark()" style="cursor:pointer;">
+    <div class="status-bar">
+      <span class="loc-badge">公園</span>
+      <span class="dt-money" id="park-dt"></span>
+    </div>
+    <div class="park-icons">
+      <button class="icon-btn" onclick="showNotif('👕 おきがえ（準備中）')">👕</button>
+      <button class="icon-btn" onclick="showNotif('🗂 アルバム（準備中）')">🗂</button>
+      <button class="icon-btn" onclick="talkPark()">💬</button>
+      <button class="icon-btn" onclick="showNotif('🎵 うた（準備中）')">🎵</button>
+    </div>
+    <div class="cinna-wrap park" id="park-wrap" onclick="talkPark()">
+      <div class="cinna-shadow"></div>
+      <img class="cinna-char" id="park-char" src="sozai/cinna_normal.png" alt="シナモロール">
+    </div>
+    <div class="money-badge">💰 <span id="money-disp">12,450</span>円</div>
+    <div class="dlg" id="park-dlg" onclick="talkPark()">
+      公園でのんびりしています♪
+    </div>
+    <div class="action-bar">
+      <button class="btn btn-blue"   onclick="talkPark()">💬 話す</button>
+      <button class="btn btn-orange" onclick="openFood()">🍽 たべもの</button>
+      <button class="btn btn-green"  onclick="earnMoney()">💰 おでかけ</button>
+      <button class="btn btn-gray"   onclick="goScene('room')">🏠 おへやへ</button>
+    </div>
+  </div>
+
+  <!-- ══ プロフィール ══ -->
+  <div class="scene" id="scene-profile">
+    <div class="status-bar">
+      <span class="loc-badge">プロフィール</span>
+      <button class="btn btn-gray" style="font-size:11px;padding:3px 10px;" onclick="goScene('room')">もどる</button>
+    </div>
+    <div class="prof-layout">
+      <div class="prof-left">
+        <img id="prof-char-img" src="sozai/cinna_normal.png" alt="シナモロール">
+        <div style="font-size:15px;font-weight:bold;color:#7bb8e8;">シナモロール</div>
+        <div style="font-size:10px;color:#888;text-align:center;line-height:1.6;">「はずかしがりや」で<br>「やさしい」男の子</div>
+        <div style="margin-top:8px;font-size:11px;color:#aaa;text-align:center;line-height:1.9;">
+          たんじょうび<br>３月６日<br>しゅっしん<br>シナモンの森
+        </div>
+      </div>
+      <div class="prof-right">
+        <div class="p-grid">
+          <div class="pcard full">
+            <h4>現在のようす</h4>
+            <div id="prof-status" style="margin-bottom:6px;">ごきげんのようです</div>
+            <div class="bar-row">
+              <span class="bar-label">きぶん</span>
+              <div class="bar-bg"><div class="bar-fill" id="prof-mood"   style="background:#ff9a3c;"></div></div>
+            </div>
+            <div class="bar-row">
+              <span class="bar-label">おなか</span>
+              <div class="bar-bg"><div class="bar-fill" id="prof-hunger" style="background:#5cc85c;"></div></div>
+            </div>
+          </div>
+          <div class="pcard">
+            <h4>好きなもの</h4>
+            🍩 シナモンロール<br>🛁 おふろ<br>☁ ふわふわなもの<br>🎵 おんがく
+          </div>
+          <div class="pcard">
+            <h4>ともだち</h4>
+            🐶 ポムポムプリン<br>🎀 マイメロディ<br>🖤 クロミ<br>🐟 ハンギョドン
+          </div>
+          <div class="pcard full">
+            <h4>セリフ集</h4>
+            「えへへ〜ありがとう！」<br>
+            「いっしょにいると、たのしいね♪」<br>
+            「ぼく、はずかしがりやだけど...なかよくしてね？」<br>
+            「だいじょうぶだよ〜ぼくがついてるよ！」
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ たべものパネル ══ -->
+  <div class="overlay" id="food-overlay">
+    <div class="panel">
+      <h3>🍽 たべものをあげる</h3>
+      <div class="food-grid">
+        <div class="food-item" onclick="giveFood('シナモンロール','🍩',28,22,'happy')">
+          <span class="food-emoji">🍩</span>
+          シナモンロール<br><span style="color:#ff9a3c;font-size:10px;">★お気に入り！</span>
+        </div>
+        <div class="food-item" onclick="giveFood('ケーキ','🎂',14,20,'happy')">
+          <span class="food-emoji">🎂</span>ケーキ
+        </div>
+        <div class="food-item" onclick="giveFood('プリン','🍮',12,18,'happy')">
+          <span class="food-emoji">🍮</span>プリン
+        </div>
+        <div class="food-item" onclick="giveFood('からいもの','🌶️',-22,12,'sad')">
+          <span class="food-emoji">🌶️</span>
+          からいもの<br><span style="color:#e44;font-size:10px;">★きらい！</span>
+        </div>
+      </div>
+      <div style="text-align:center;">
+        <button class="btn btn-gray" onclick="closeFood()">やめる</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ 食事シーン ══ -->
+  <div class="overlay" id="eat-overlay">
+    <div class="panel">
+      <h3 id="eat-title">たべています...</h3>
+      <div class="eat-panel">
+        <img id="eat-char-img" src="sozai/cinna_eat.png" alt="食事中">
+        <div class="eat-info">
+          <span style="font-size:34px;" id="eat-emoji">🍩</span>
+          <div style="font-size:12px;color:#555;">
+            <div id="eat-name" style="font-weight:bold;margin-bottom:2px;"></div>
+            <div id="eat-sub">おいしそうに食べています</div>
+          </div>
+        </div>
+        <div id="eat-comment" style="font-size:14px;color:#7bb8e8;font-weight:bold;text-align:center;"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+<script>
+/* ════════════════════════════════
+   状態
+   ════════════════════════════════ */
+const G = { mood:80, hunger:60, money:12450, scene:'exterior', dlgIdx:0 };
+
+const SPRITES = {
+  normal: 'sozai/cinna_normal.png',
+  happy:  'sozai/cinna_happy.png',
+  sad:    'sozai/cinna_sad.png',
+  eat:    'sozai/cinna_eat.png',
+};
+
+/* ════════════════════════════════
+   セリフパターン（大幅増量）
+   ════════════════════════════════ */
+const roomDlgs = [
+  // 基本
+  'えへへ〜ありがとう！',
+  'いっしょにいると、たのしいね♪',
+  'ぼく、はずかしがりやだけど...なかよくしてね？',
+  'だいじょうぶだよ〜ぼくがついてるよ！',
+  // ふんわり系
+  'えへへ、なあに？',
+  'ふわふわしてると落ち着くんだよね〜',
+  'なんか、ぽかぽかするな〜♪',
+  'ぼくって、むくむくしてるよね。えへへ',
+  'ゆめのなかで、ふわふわ飛んでたんだ！',
+  // 食べもの系
+  'シナモンロール、食べたいなあ...',
+  'おやつの時間だ！えへへ♪',
+  'いっぱい食べると元気になるんだよ！',
+  'カフェのシナモンロール、最高なんだよね〜♪',
+  // ともだち系
+  'ポムポムプリンくんと遊んだよ！たのしかった♪',
+  'マイメロディちゃん、おしゃれだよね〜',
+  'クロミちゃんはこわそうだけど、なんかきになるんだよね...',
+  'ハンギョドンくん、さいきんどうしてるかな...',
+  // 思い出・ふるさと
+  'シナモンの森、なつかしいなあ...',
+  'ぼくのしっぽ、シナモンロールみたいなんだよ♪ 知ってた？',
+  // 日常
+  'おへやにいると落ち着くね〜',
+  'きょうはいいてんきだね〜 お空がきれい！',
+  'うた、うたおうか？ えへへ、はずかしいな...',
+  'ぼくね、みんなのことが大好きなんだよ！',
+  'いつもそばにいてくれてありがとう♪',
+  'なんかいいことありそうな気がするな〜♪',
+  '今日もいい一日だったね！',
+  // ちょっと眠そう
+  '...zzz ...むにゃ...（ねむそうにしています）',
+  // ちょっと恥ずかし系
+  'えっ！？なんでもないよ...えへへ',
+  'そんなにじっと見ないでよ〜... えへへ♪',
+  'ぼく、もっとつよくなりたいな。えへへ、はずかしいな...',
+  // 感動系
+  'お空がくもってきたね。でもぼくはここにいるよ！',
+  'たのしいことがいっぱいあるといいね♪',
+  '...ぼくのこと、覚えてくれてるの？ えへへ、うれしいな',
+];
+
+const parkDlgs = [
+  '公園でのんびりしています♪',
+  '噴水、きれいだね！',
+  'お空があおくて気持ちいいな〜',
+  'お散歩って楽しいね♪',
+  'ポムポムプリンくんに会えるかな？',
+  'あ、ちょうちょだ！ふわふわしてるね〜',
+  'いい風が吹いてるよ〜♪',
+  'こうえん、きもちいいな〜',
+  'だれかとかけっこしたいな！',
+  'くさのにおいがすきなんだよね♪',
+  'あのベンチで、おやつたべたいな〜',
+  'はっぱがゆれてるよ。きれいだね',
+  'そら、みてたら、きもちよくなってきた♪',
+  'きょうのおでかけはどこにいこうかな〜',
+  'いっしょに走ろうよ！えへへ〜♪',
+  'お日さまがあたたかくて、うとうとしちゃいそう...',
+  'こんなきれいなこうえん、だいすきだよ♪',
+  'はなのにおい、いい香りがするよ〜',
+];
+
+/* 時間帯セリフ */
+function getTimeDlg() {
+  const h = new Date().getHours();
+  if (h >= 5  && h < 10) return 'おはよう〜！ 今日もいい一日になりそうだね♪';
+  if (h >= 10 && h < 12) return 'もうすぐお昼だね。おなかすいてきたかも〜';
+  if (h >= 12 && h < 14) return 'おひるごはんのじかんだよ〜！何食べようかな♪';
+  if (h >= 14 && h < 17) return 'おやつの時間だ〜！シナモンロールが食べたいな♪';
+  if (h >= 17 && h < 20) return 'ゆうがたになったね。きょうもたのしかった！';
+  if (h >= 20 && h < 23) return 'よるになったね〜。そろそろねむくなってきたかも...';
+  return 'こんなよるにありがとう♪ ぼくはまだおきてるよ！';
+}
+
+/* ════════════════════════════════
+   時刻
+   ════════════════════════════════ */
+function fmtTime() {
+  const n = new Date(), mm = String(n.getMonth()+1).padStart(2,'0'),
+        dd = String(n.getDate()).padStart(2,'0'), h = n.getHours(),
+        mi = String(n.getMinutes()).padStart(2,'0');
+  return `${mm}/${dd} ${h>=12?'PM':'AM'} ${String(h%12||12).padStart(2,'0')}:${mi}`;
+}
+
+/* ════════════════════════════════
+   UI更新
+   ════════════════════════════════ */
+function updateAll() {
+  const t = fmtTime();
+  ['ext','room','park'].forEach(id => { const e=document.getElementById(id+'-dt'); if(e)e.textContent=t; });
+  document.getElementById('money-disp').textContent = G.money.toLocaleString();
+  const mp=Math.max(0,Math.min(100,G.mood)), hp=Math.max(0,Math.min(100,G.hunger));
+  ['mood-bar','prof-mood'].forEach(id=>document.getElementById(id).style.width=mp+'%');
+  ['hunger-bar','prof-hunger'].forEach(id=>document.getElementById(id).style.width=hp+'%');
+  const st = mp>=90?'とってもごきげんです！！':mp>=60?'ごきげんのようです':mp>=30?'ふつうのようです':'ちょっとさびしそうです...';
+  document.getElementById('prof-status').textContent = st;
+  document.getElementById('prof-char-img').src = mp<30 ? SPRITES.sad : SPRITES.normal;
+}
+
+/* ════════════════════════════════
+   シーン遷移
+   ════════════════════════════════ */
+function goScene(name) {
+  document.querySelectorAll('.scene').forEach(s=>s.classList.remove('active'));
+  document.getElementById('scene-'+name).classList.add('active');
+  G.scene = name;
+  if (name==='room') {
+    const low=G.hunger<20;
+    setSprite('room', low?'sad':'normal');
+    setDlg('room', low?'おなかがすいたよ〜😢\nたべものをくれると嬉しいな...'
+      : G.mood>=90?'とってもごきげんです！！えへへ〜♪':'シナモロールがいます\nごきげんのようです');
+  } else if (name==='park') {
+    setSprite('park','normal');
+    setDlg('park', parkDlgs[Math.floor(Math.random()*parkDlgs.length)]);
+  }
+  updateAll();
+}
+
+function setDlg(scene,txt) {
+  const el=document.getElementById(scene+'-dlg');
+  if(el) el.innerHTML=txt.replace(/\n/g,'<br>');
+}
+
+/* ════════════════════════════════
+   スプライト切替＋アニメ
+   ════════════════════════════════ */
+function setSprite(scene, pose, anim) {
+  const el=document.getElementById(scene+'-char');
+  if(!el) return;
+  el.src=SPRITES[pose]||SPRITES.normal;
+  if(anim) {
+    el.classList.remove('do-bounce','do-shake');
+    void el.offsetWidth;
+    el.classList.add(anim==='shake'?'do-shake':'do-bounce');
+    el.addEventListener('animationend',()=>el.classList.remove('do-bounce','do-shake'),{once:true});
+  }
+}
+
+/* ════════════════════════════════
+   話す
+   ════════════════════════════════ */
+function talkRoom() {
+  /* 10回に1回は時間帯セリフ */
+  const dlg = (G.dlgIdx % 10 === 9) ? getTimeDlg() : roomDlgs[G.dlgIdx % roomDlgs.length];
+  G.dlgIdx++; G.mood=Math.min(100,G.mood+3);
+  setDlg('room', dlg);
+  setSprite('room','happy','bounce');
+  setTimeout(()=>setSprite('room',G.hunger<20?'sad':'normal'),1300);
+  updateAll();
+}
+function talkPark() {
+  setDlg('park', parkDlgs[Math.floor(Math.random()*parkDlgs.length)]);
+  G.mood=Math.min(100,G.mood+2);
+  setSprite('park','happy','bounce');
+  setTimeout(()=>setSprite('park','normal'),1300);
+  updateAll();
+}
+
+/* ════════════════════════════════
+   たべもの
+   ════════════════════════════════ */
+function openFood()  { document.getElementById('food-overlay').classList.add('active'); }
+function closeFood() { document.getElementById('food-overlay').classList.remove('active'); }
+
+function giveFood(name,emoji,moodDelta,hungerGain,reaction) {
+  closeFood();
+  G.mood  =Math.max(0,Math.min(100,G.mood+moodDelta));
+  G.hunger=Math.min(100,G.hunger+hungerGain);
+  const happy=reaction==='happy';
+  document.getElementById('eat-char-img').src=happy?SPRITES.eat:SPRITES.sad;
+  document.getElementById('eat-emoji').textContent=emoji;
+  document.getElementById('eat-name').textContent=name;
+  document.getElementById('eat-title').textContent=happy?'たべています...':'たべたくないよ〜！';
+  document.getElementById('eat-sub').textContent=happy?'おいしそうに食べています':'たべるのをいやがっています！';
+  document.getElementById('eat-comment').textContent=
+    name==='シナモンロール'?'「えへへ〜！大好き！！♪」':
+    !happy?'「う…から…からいよ〜！😢」':'「おいしい〜！ありがとう♪」';
+  document.getElementById('eat-overlay').classList.add('active');
+  const sc=G.scene==='park'?'park':'room';
+  setDlg(sc,`シナモロールは${name}を食べています`);
+  setSprite(sc,happy?'eat':'sad',happy?'bounce':'shake');
+  setTimeout(()=>{
+    document.getElementById('eat-overlay').classList.remove('active');
+    setSprite(sc,G.hunger<20?'sad':'normal');
+    updateAll();
+  },2800);
+}
+
+/* ════════════════════════════════
+   おでかけ
+   ════════════════════════════════ */
+function earnMoney() {
+  const got=Math.floor(Math.random()*600)+200;
+  G.money+=got;
+  showNotif(`+${got.toLocaleString()}円 ゲット！`);
+  document.getElementById('money-disp').textContent=G.money.toLocaleString();
+  setDlg('park',`おでかけして${got}円もらったよ♪`);
+  setSprite('park','happy','bounce');
+  setTimeout(()=>setSprite('park','normal'),1300);
+  updateAll();
+}
+
+/* ════════════════════════════════
+   通知
+   ════════════════════════════════ */
+function showNotif(txt) {
+  const n=document.getElementById('notif');
+  n.textContent=txt; n.classList.remove('show'); void n.offsetWidth; n.classList.add('show');
+  setTimeout(()=>n.classList.remove('show'),2400);
+}
+
+/* ════════════════════════════════
+   🎯 マウス傾き（3D効果）
+   ゲームエリアにマウスが動くたびに
+   キャララッパーを perspective + rotateX/Y で傾ける
+   ════════════════════════════════ */
+const game = document.getElementById('game');
+
+game.addEventListener('mousemove', e => {
+  const r  = game.getBoundingClientRect();
+  const rx = ((e.clientY - r.top)  / r.height - 0.5) * -12; /* 上→仰角、下→俯角 */
+  const ry = ((e.clientX - r.left) / r.width  - 0.5) *  14; /* 左→左向き、右→右向き */
+  document.querySelectorAll('.cinna-wrap').forEach(w => {
+    /* translateX(-50%) はラッパーの配置に必要なので保持 */
+    const base = w.classList.contains('park') ? 'translateX(-50%)' : 'translateX(-50%)';
+    w.style.transform = `${base} perspective(500px) rotateX(${rx}deg) rotateY(${ry}deg)`;
+  });
+});
+
+game.addEventListener('mouseleave', () => {
+  document.querySelectorAll('.cinna-wrap').forEach(w => {
+    w.style.transform = 'translateX(-50%)';
+    /* CSS transitionで滑らかに戻す */
+    w.style.transition = 'transform 0.5s ease';
+    setTimeout(() => w.style.transition = '', 500);
+  });
+});
+
+/* ════════════════════════════════
+   時間経過：ステータス自動減少
+   ════════════════════════════════ */
+setInterval(()=>{
+  G.hunger=Math.max(0,G.hunger-1);
+  G.mood  =Math.max(0,G.mood-0.5);
+  updateAll();
+  if(G.hunger<20&&G.scene==='room'){
+    setDlg('room','おなかがすいたよ〜😢\nたべものをくれると嬉しいな...');
+    setSprite('room','sad');
+  }
+},20000);
+
+/* ════════════════════════════════
+   初期化
+   ════════════════════════════════ */
+updateAll();
+setInterval(updateAll,30000);
+</script>
+</body>
+</html>

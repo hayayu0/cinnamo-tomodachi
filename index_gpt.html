@@ -1,0 +1,643 @@
+﻿<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>シナモロール風・生活ミニゲーム</title>
+  <style>
+    :root {
+      --w: 1024px;
+      --h: 768px;
+      --orange: #ff8a18;
+      --brown: #3d2a16;
+      --cream: #fff6d7;
+      --blue: #46a5ff;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      background: radial-gradient(circle at top, #f8fdff, #e3f5ff 45%, #fff1ca);
+      font-family: "Hiragino Maru Gothic ProN", "Yu Gothic", system-ui, sans-serif;
+      color: #2a2117;
+      user-select: none;
+    }
+
+    .game {
+      position: relative;
+      width: min(var(--w), 100vw);
+      aspect-ratio: 4 / 3;
+      overflow: hidden;
+      border: 6px solid #1d160d;
+      border-radius: 18px;
+      background: #000;
+      box-shadow: 0 24px 70px rgba(0,0,0,.28);
+    }
+
+    .screen {
+      position: absolute;
+      inset: 0;
+      background-size: cover;
+      background-position: center;
+      transition: opacity .18s ease;
+    }
+
+    .screen.hidden { opacity: 0; pointer-events: none; }
+
+    /* hidden属性はCSSのdisplay:flexに負ける環境があるため、明示クラスで隠す */
+    .is-hidden { display: none !important; }
+
+    #room { background-image: url("sozai/bg_room.png"); }
+    #park { background-image: url("sozai/bg_park.png"); }
+    #mansion { background-image: url("sozai/bg_mansion.png"); }
+    #mansion.has-cinna { background-image: url("sozai/bg_mansion_chinna.png"); }
+
+    .hud {
+      position: absolute;
+      z-index: 40;
+      top: 12px;
+      right: 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 900;
+      color: #fff;
+      text-shadow: 0 2px 3px rgba(0,0,0,.55);
+      pointer-events: none;
+    }
+
+    .money {
+      padding: 9px 15px;
+      border-radius: 10px;
+      background: rgba(0,0,0,.48);
+      font-size: 22px;
+      letter-spacing: .04em;
+    }
+
+    .right-menu {
+      position: absolute;
+      right: 16px;
+      top: 70px;
+      z-index: 50;
+      display: grid;
+      gap: 10px;
+    }
+
+    .icon-btn {
+      width: 58px;
+      height: 58px;
+      display: grid;
+      place-items: center;
+      border: 3px solid #23180b;
+      border-radius: 14px;
+      background: linear-gradient(#fff, #dff3ff);
+      font-size: 29px;
+      box-shadow: 0 4px 0 rgba(0,0,0,.22);
+      cursor: pointer;
+    }
+
+    .icon-btn:active {
+      transform: translateY(3px);
+      box-shadow: 0 1px 0 rgba(0,0,0,.22);
+    }
+
+    .cinna {
+      position: absolute;
+      z-index: 30;
+      left: 50%;
+      top: 61%;
+      width: 180px;
+      height: auto;
+      transform: translate(-50%, -50%);
+      filter: drop-shadow(0 12px 8px rgba(0,0,0,.26));
+      cursor: pointer;
+      transition: left .25s ease, top .25s ease, width .25s ease, opacity .16s ease, transform .18s ease, filter .18s ease;
+      will-change: transform, filter;
+    }
+
+    .char-shadow {
+      position: absolute;
+      z-index: 24;
+      left: 50%;
+      top: 69%;
+      width: 130px;
+      height: 26px;
+      transform: translate(-50%, -50%);
+      border-radius: 50%;
+      background: radial-gradient(ellipse, rgba(0,0,0,.28), rgba(0,0,0,.08) 58%, transparent 72%);
+      pointer-events: none;
+      transition: left .25s ease, top .25s ease, width .25s ease, opacity .16s ease, transform .18s ease;
+    }
+
+    .char-shadow.hide { opacity: 0; }
+
+    .cinna.depth-near { width: 218px; filter: drop-shadow(0 19px 11px rgba(0,0,0,.30)); }
+    .cinna.depth-mid { width: 160px; filter: drop-shadow(0 12px 8px rgba(0,0,0,.26)); }
+    .cinna.depth-far { width: 92px; filter: drop-shadow(0 8px 5px rgba(0,0,0,.23)); }
+
+    .cinna:hover { transform: translate(-50%, -52%) scale(1.025); }
+
+    .cinna.small { width: 92px; top: 70%; }
+    .cinna.tiny { width: 48px; top: 89%; left: 33%; }
+    .cinna.hide { opacity: 0; pointer-events: none; }
+
+    .walkpad {
+      position: absolute;
+      z-index: 20;
+      inset: 90px 90px 125px 90px;
+      cursor: crosshair;
+    }
+
+    .walkpad.hide { display: none; }
+
+    .hint {
+      position: absolute;
+      left: 18px;
+      bottom: 132px;
+      z-index: 65;
+      padding: 8px 13px;
+      border: 2px solid rgba(70,56,35,.55);
+      border-radius: 999px;
+      background: rgba(255,250,226,.78);
+      font-size: 14px;
+      font-weight: 800;
+    }
+
+    .dialogue {
+      position: absolute;
+      z-index: 70;
+      left: 24px;
+      right: 24px;
+      bottom: 22px;
+      min-height: 94px;
+      padding: 17px 22px;
+      border: 4px solid #6b5a3e;
+      border-radius: 12px;
+      background: rgba(255,250,226,.96);
+      font-size: 24px;
+      line-height: 1.48;
+      font-weight: 900;
+      box-shadow: 0 6px 0 rgba(0,0,0,.16);
+    }
+
+    .dialogue .name { color: #16a5c7; }
+
+    .dialogue.compact {
+      right: 240px;
+    }
+
+    .bottom-actions {
+      position: absolute;
+      z-index: 72;
+      right: 28px;
+      bottom: 34px;
+      display: flex;
+      gap: 12px;
+    }
+
+    .btn {
+      border: 3px solid #32200d;
+      border-radius: 14px;
+      padding: 12px 28px;
+      background: linear-gradient(#ffb848, #ff8216);
+      color: #fff;
+      font-size: 22px;
+      font-weight: 900;
+      box-shadow: 0 5px 0 #8f4b10;
+      cursor: pointer;
+    }
+
+    .btn.secondary {
+      background: linear-gradient(#fff, #e7e7e7);
+      color: #222;
+      box-shadow: 0 5px 0 #888;
+    }
+
+    .btn:active {
+      transform: translateY(4px);
+      box-shadow: 0 1px 0 #8f4b10;
+    }
+
+    .overlay {
+      position: absolute;
+      inset: 0;
+      z-index: 100;
+      display: none;
+      place-items: center;
+      background: rgba(0,0,0,.36);
+      backdrop-filter: blur(2px);
+    }
+
+    .panel {
+      width: min(680px, 92%);
+      max-height: 88%;
+      overflow: auto;
+      padding: 24px;
+      border: 5px solid #594631;
+      border-radius: 20px;
+      background: #fff9df;
+      box-shadow: 0 16px 0 rgba(0,0,0,.22);
+      text-align: center;
+    }
+
+    .panel h2 {
+      margin: 0 0 12px;
+      font-size: 32px;
+    }
+
+    .food-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      margin: 20px 0 24px;
+    }
+
+    .food {
+      min-height: 132px;
+      display: grid;
+      place-items: center;
+      gap: 4px;
+      padding: 10px;
+      border: 4px solid #987246;
+      border-radius: 16px;
+      background: #fff;
+      box-shadow: 0 6px 0 rgba(0,0,0,.18);
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .food .emoji { font-size: 54px; line-height: 1; }
+
+    .profile-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin: 16px 0 18px;
+    }
+
+    .card {
+      min-height: 95px;
+      padding: 10px;
+      border: 3px solid #80bee9;
+      border-radius: 12px;
+      background: #f5fbff;
+      font-size: 15px;
+      font-weight: 900;
+    }
+
+    .card b {
+      display: block;
+      margin-bottom: 6px;
+      color: #2477ad;
+      font-size: 18px;
+    }
+
+    .notice {
+      position: absolute;
+      z-index: 60;
+      left: 50%;
+      top: 86px;
+      transform: translateX(-50%);
+      padding: 12px 20px;
+      border: 3px solid #6a593d;
+      border-radius: 999px;
+      background: rgba(255,255,255,.94);
+      font-size: 20px;
+      font-weight: 900;
+      box-shadow: 0 5px 0 rgba(0,0,0,.16);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .2s ease, top .2s ease;
+    }
+
+    .notice.show {
+      top: 76px;
+      opacity: 1;
+    }
+
+    .fade {
+      animation: fadeIn .2s ease both;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @keyframes hop {
+      0% { transform: translate(-50%, -50%) scale(1); }
+      45% { transform: translate(-50%, -66%) scale(1.05); }
+      100% { transform: translate(-50%, -50%) scale(1); }
+    }
+
+    .hop { animation: hop .45s ease-out; }
+
+    @media (max-width: 720px) {
+      .dialogue { font-size: 17px; min-height: 76px; }
+      .right-menu { transform: scale(.78); transform-origin: top right; }
+      .money { font-size: 16px; }
+      .food-grid, .profile-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+  <main class="game" id="game">
+    <section id="room" class="screen"></section>
+    <section id="park" class="screen hidden"></section>
+    <section id="mansion" class="screen hidden"></section>
+
+    <div class="hud">
+      <span id="clock">05/27 PM 03:12</span>
+      <span class="money">💼 <span id="money">12,450</span>円</span>
+    </div>
+
+    <nav class="right-menu" aria-label="メニュー">
+      <button class="icon-btn" type="button" onclick="window.gameSetScene('room')" title="部屋">🏠</button>
+      <button class="icon-btn" type="button" onclick="window.gameSetScene('park')" title="公園">🌳</button>
+      <button class="icon-btn" type="button" onclick="window.gameSetScene('mansion')" title="マンション">🏢</button>
+      <button class="icon-btn" type="button" onclick="window.gameShowFoodPanel()" title="食べ物">🍽️</button>
+      <button class="icon-btn" type="button" onclick="window.gameShowProfilePanel()" title="プロフィール">📋</button>
+    </nav>
+
+    <div id="walkpad" class="walkpad" title="クリックした場所へ移動"></div>
+    <div id="charShadow" class="char-shadow"></div>
+    <img id="cinna" class="cinna depth-mid" src="sozai/cinna_normal.png" alt="シナモロール" draggable="false" />
+    <div class="hint">背景をクリックすると、奥行き移動します</div>
+
+    <div id="notice" class="notice">シナモロールの部屋</div>
+
+    <div id="dialogue" class="dialogue">
+      <span class="name">シナモロール</span>がいます<br />ごきげんのようです
+    </div>
+
+    <div class="bottom-actions is-hidden" id="bottomActions">
+      <button class="btn" type="button" onclick="window.gameSetScene('room')">入る</button>
+      <button class="btn secondary" type="button" onclick="window.gameSetScene('park')">戻る</button>
+    </div>
+
+    <div id="overlay" class="overlay">
+      <div id="panel" class="panel"></div>
+    </div>
+  </main>
+
+  <script>
+    (() => {
+      const ASSET = {
+        normal: 'sozai/cinna_normal.png',
+        sad: 'sozai/cinna_sad.png',
+        eat: 'sozai/cinna_eat.png',
+        happy: 'sozai/cinna_happy.png'
+      };
+
+      const screens = {
+        room: document.getElementById('room'),
+        park: document.getElementById('park'),
+        mansion: document.getElementById('mansion')
+      };
+
+      const cinna = document.getElementById('cinna');
+      const charShadow = document.getElementById('charShadow');
+      const walkpad = document.getElementById('walkpad');
+      const dialogue = document.getElementById('dialogue');
+      const overlay = document.getElementById('overlay');
+      const panel = document.getElementById('panel');
+      const notice = document.getElementById('notice');
+      const bottomActions = document.getElementById('bottomActions');
+      const moneyEl = document.getElementById('money');
+
+      let current = 'room';
+      let money = 12450;
+      let mood = 70;
+      let sceneHasCinnaBubble = false;
+
+      const roomLines = [
+        'えへへ…いっしょにいると、たのしいね♪', 'カフェのシナモンロールが食べたいな', '今日はおひるねびよりだよ〜', 'ともだちに会いに行きたいな',
+        'このお部屋、雲みたいで落ち着くね', 'なにか楽しいこと、起こらないかな？', 'ちょっとだけ、空を飛ぶ練習をしたいな', 'お客さんが来ると、少しどきどきするよ',
+        'お茶の時間にしようかな', '窓の外を見てると、眠くなってくるね', 'ぼく、今日はとってもいい子にしてたよ', 'ふわふわのクッションがほしいな',
+        'あまい香りがすると、元気が出るんだ', 'たまには模様替えもいいかもね'
+      ];
+
+      const parkLines = [
+        'おひさまがまぶしいね♪', '噴水の近くはすずしいよ', 'おさんぽすると元気になるね', '雲がふわふわ流れてるよ',
+        '木かげで少し休もうかな', 'レンガの道って、歩く音が楽しいね', '今日は風がやさしいね', '誰かとピクニックしたいな',
+        'あの雲、シナモンロールみたいに見えるね', '公園に来ると、耳がふわっとするんだ', '遠くまで飛んでいけそうな気がするよ', 'ベンチでおやつを食べたいな'
+      ];
+
+      const mansionLines = [
+        '住人がこちらを見ています', 'どこかの部屋から楽しそうな声がします', 'シナモロールの部屋は307号室です',
+        '窓がいくつか開いています', 'マンションの前は静かです', '誰かが遊びに来てほしそうです'
+      ];
+
+      const foodLines = {
+        roll: ['カフェのシナモンロール、だいすき！', 'ふわふわで、あまくて、しあわせだよ〜', 'これを食べると、元気がいっぱいになるよ！', 'ぼくと名前が似てるけど、食べ物のほうだね♪'],
+        pancake: ['パンケーキ、やさしい味がするね', 'ふかふかでおいしいよ', 'メープルの香りがいいね', 'ゆっくり食べたい気分だよ'],
+        spicy: ['か、からいよぉ…', 'お水がほしいな…', 'ぼくにはちょっと刺激が強かったみたい', '次はあまいものがいいな…']
+      };
+
+      function say(html) {
+        dialogue.innerHTML = html;
+      }
+
+      function setCinna(kind) {
+        cinna.src = ASSET[kind] || ASSET.normal;
+        cinna.classList.remove('hop');
+        void cinna.offsetWidth;
+        if (kind === 'happy') cinna.classList.add('hop');
+      }
+
+      function setScene(name) {
+        current = name;
+        Object.keys(screens).forEach(key => {
+          screens[key].classList.toggle('hidden', key !== name);
+        });
+
+        overlay.style.display = 'none';
+        bottomActions.classList.add('is-hidden');
+        dialogue.classList.remove('compact');
+        notice.classList.remove('show');
+        screens.mansion.classList.remove('has-cinna');
+        cinna.className = 'cinna depth-mid';
+        charShadow.className = 'char-shadow';
+        walkpad.classList.remove('hide');
+        setCinna('normal');
+
+        if (name === 'room') {
+          placeCinna(50, 61, 'mid');
+          say('<span class="name">シナモロール</span>がいます<br>ごきげんのようです');
+          return;
+        }
+
+        if (name === 'park') {
+          cinna.classList.add('small');
+          placeCinna(50, 70, 'far');
+          say('<span class="name">シナモロール</span>は公園をおさんぽしています');
+          return;
+        }
+
+        if (name === 'mansion') {
+          cinna.classList.add('hide');
+          charShadow.classList.add('hide');
+          walkpad.classList.add('hide');
+          sceneHasCinnaBubble = false;
+          say('トモコレマンションです<br>「入る」で307号室へ、「戻る」で公園へ移動します');
+          bottomActions.classList.remove('is-hidden');
+          dialogue.classList.add('compact');
+        }
+      }
+
+      function placeCinna(xPercent, yPercent, depth = 'mid') {
+        cinna.style.left = xPercent + '%';
+        cinna.style.top = yPercent + '%';
+        charShadow.style.left = xPercent + '%';
+        charShadow.style.top = (yPercent + 8) + '%';
+        cinna.classList.remove('depth-near', 'depth-mid', 'depth-far');
+        cinna.classList.add('depth-' + depth);
+        const shadowWidth = depth === 'near' ? 175 : depth === 'far' ? 82 : 130;
+        charShadow.style.width = shadowWidth + 'px';
+        charShadow.style.transform = `translate(-50%, -50%) scaleX(${depth === 'near' ? 1.25 : depth === 'far' ? .75 : 1})`;
+      }
+
+      function depthFromY(y) {
+        if (y > 72) return 'near';
+        if (y < 52) return 'far';
+        return 'mid';
+      }
+
+      function openPanel(html) {
+        panel.innerHTML = html;
+        overlay.style.display = 'grid';
+        panel.classList.add('fade');
+        setTimeout(() => panel.classList.remove('fade'), 220);
+      }
+
+      function showFoodPanel() {
+        openPanel(`
+          <h2>プレゼントをあげる</h2>
+          <p><b>シナモロール</b>に何をあげますか？</p>
+          <div class="food-grid">
+            <button class="food" type="button" data-food="roll"><span class="emoji">🥐</span><span>カフェの<br>シナモンロール</span></button>
+            <button class="food" type="button" data-food="pancake"><span class="emoji">🥞</span><span>パンケーキ</span></button>
+            <button class="food" type="button" data-food="spicy"><span class="emoji">🌶️</span><span>からいもの</span></button>
+          </div>
+          <button class="btn secondary" type="button" id="closePanel">やめる</button>
+        `);
+        panel.querySelector('#closePanel').onclick = () => overlay.style.display = 'none';
+        panel.querySelectorAll('.food').forEach(el => {
+          el.onclick = () => giveFood(el.dataset.food);
+        });
+      }
+
+      function giveFood(food) {
+        overlay.style.display = 'none';
+        setScene('room');
+
+        if (food === 'roll') {
+          money -= 320;
+          mood += 16;
+          setCinna('eat');
+          say('<span class="name">シナモロール</span>は<br>' + pick(foodLines.roll));
+          setTimeout(() => {
+            setCinna('happy');
+            say('<span class="name">シナモロール</span>は<br>うれしくて片耳を上げてよろこんでいます！');
+            setTimeout(() => setCinna('normal'), 1400);
+          }, 1500);
+        } else if (food === 'pancake') {
+          money -= 280;
+          mood += 8;
+          setCinna('eat');
+          say('<span class="name">シナモロール</span>は<br>' + pick(foodLines.pancake));
+          setTimeout(() => setCinna('normal'), 1800);
+        } else {
+          money -= 120;
+          mood -= 18;
+          setCinna('sad');
+          say('<span class="name">シナモロール</span>は<br>' + pick(foodLines.spicy));
+          setTimeout(() => setCinna('normal'), 2000);
+        }
+
+        moneyEl.textContent = money.toLocaleString();
+      }
+
+      function showProfilePanel() {
+        openPanel(`
+          <h2>プロフィール</h2>
+          <div class="profile-grid">
+            <div class="card"><b>名前</b>シナモロール</div>
+            <div class="card"><b>性格</b>はずかしがりや<br>やさしい</div>
+            <div class="card"><b>好き</b>カフェの<br>シナモンロール</div>
+            <div class="card"><b>苦手</b>からいもの</div>
+            <div class="card"><b>部屋</b>307号室<br>雲もよう</div>
+            <div class="card"><b>場所</b>公園が好き</div>
+            <div class="card"><b>ごきげん</b>${Math.max(0, Math.min(100, mood))} / 100</div>
+            <div class="card"><b>メモ</b>耳で空を飛ぶ</div>
+          </div>
+          <button class="btn" type="button" id="profileClose">もどる</button>
+        `);
+        panel.querySelector('#profileClose').onclick = () => overlay.style.display = 'none';
+      }
+
+      function pick(arr) {
+        return arr[Math.floor(Math.random() * arr.length)];
+      }
+
+      function updateClock() {
+        const d = new Date();
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        let h = d.getHours();
+        const ap = h >= 12 ? 'PM' : 'AM';
+        h = h % 12 || 12;
+        const min = String(d.getMinutes()).padStart(2, '0');
+        document.getElementById('clock').textContent = `${mm}/${dd} ${ap} ${String(h).padStart(2, '0')}:${min}`;
+      }
+
+      overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) overlay.style.display = 'none';
+      });
+
+      screens.mansion.addEventListener('click', () => {
+        if (current !== 'mansion') return;
+        sceneHasCinnaBubble = !sceneHasCinnaBubble;
+        screens.mansion.classList.toggle('has-cinna', sceneHasCinnaBubble);
+        notice.textContent = sceneHasCinnaBubble ? 'シナモロールが部屋にいます' : 'マンション外観';
+        notice.classList.add('show');
+        say(pick(mansionLines));
+        setTimeout(() => notice.classList.remove('show'), 1300);
+      });
+
+      walkpad.addEventListener('click', (e) => {
+        if (current === 'mansion') return;
+        const rect = walkpad.getBoundingClientRect();
+        const x = ((e.clientX - rect.left) / rect.width) * 100;
+        const yInPad = ((e.clientY - rect.top) / rect.height) * 100;
+        const y = current === 'park' ? Math.max(48, Math.min(78, 48 + yInPad * .34)) : Math.max(48, Math.min(76, 50 + yInPad * .32));
+        const xGame = Math.max(18, Math.min(82, 10 + x * .8));
+        const depth = depthFromY(y);
+        placeCinna(xGame, y, depth);
+        setCinna('normal');
+        say('<span class="name">シナモロール</span>は<br>' + (depth === 'near' ? 'こちらに近づいてきました' : depth === 'far' ? '奥のほうへ歩いていきました' : 'てくてく歩いています'));
+      });
+
+      cinna.addEventListener('click', () => {
+        if (current === 'mansion') return;
+        const lines = current === 'park' ? parkLines : roomLines;
+        setCinna('happy');
+        say('<span class="name">シナモロール</span><br>' + pick(lines));
+        setTimeout(() => setCinna('normal'), 1300);
+      });
+
+      window.gameSetScene = setScene;
+      window.gameShowFoodPanel = showFoodPanel;
+      window.gameShowProfilePanel = showProfilePanel;
+
+      updateClock();
+      setInterval(updateClock, 1000);
+      setScene('room');
+    })();
+  </script>
+</body>
+</html>
