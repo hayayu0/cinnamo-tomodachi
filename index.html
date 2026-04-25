@@ -136,8 +136,8 @@ body {
 .park-icons { position:absolute; top:54px; right:12px; display:flex; flex-direction:column; gap:8px; z-index:28; }
 .icon-btn { width:52px; height:52px; border-radius:10px; border:2px solid #ddd; background:rgba(255,255,255,0.9); font-size:24px; cursor:pointer; display:flex; align-items:center; justify-content:center; }
 .icon-btn:active { transform:scale(0.88); }
+.time-only-badge { position:absolute; top:8px; right:12px; background:rgba(255,255,255,0.88); border-radius:12px; padding:5px 14px; z-index:30; }
 .money-badge { position:absolute; bottom:144px; left:18px; background:rgba(255,255,255,0.93); border:2px solid #ddd; border-radius:20px; padding:6px 18px; font-size:17px; font-weight:bold; color:#e8a000; z-index:25; }
-
 .overlay { position:absolute; inset:0; background: rgba(0,0,0,0.18);backdrop-filter: blur(1px);display:none; justify-content:center; align-items:center; z-index:100; }
 .overlay.active { display:flex; }
 .panel { background:#fff; border-radius:18px; padding:22px; width:min(390px,90%); box-shadow:0 8px 30px rgba(0,0,0,0.34); }
@@ -168,6 +168,22 @@ body {
 .bar-fill { height:100%; border-radius:6px; transition:width .5s; }
 
 .walk-hint { position:absolute; left:18px; top:52px; z-index:28; padding:6px 12px; border:2px solid rgba(70,56,35,.45); border-radius:999px; background:rgba(255,250,226,.82); font-size:13px; font-weight:bold; pointer-events:none; }
+
+#water-overlay {
+  position:absolute; left:48%; bottom:48%;
+  width:14%; transform:translateX(-50%) scaleY(0);
+  transform-origin:bottom center;
+  pointer-events:none; z-index:24; opacity:0;
+}
+#water-overlay.spraying { animation:water-spray 2s ease-out forwards; }
+@keyframes water-spray {
+  0%   { opacity:0;    transform:translateX(-50%) scaleX(0.7) scaleY(0.3); }
+  12%  { opacity:1;    transform:translateX(-50%) scaleX(0.7) scaleY(1.6); }
+  35%  { opacity:0.95; transform:translateX(-50%) scaleX(0.7) scaleY(0.95); }
+  55%  { opacity:0.9;  transform:translateX(-50%) scaleX(0.7) scaleY(1.8); }
+  80%  { opacity:0.75; transform:translateX(-50%) scaleX(0.7) scaleY(0.9); }
+  100% { opacity:0;    transform:translateX(-50%) scaleX(0.7) scaleY(0.3); }
+}
 
 /* ── 感情パーティクル ── */
 .particle {
@@ -255,11 +271,12 @@ body {
 
   <div class="scene" id="scene-room">
     <img class="bg" src="sozai/bg_room.png" alt="307号室" onclick="walkTo(event,'room')" style="cursor:crosshair;" />
-    <div class="status-bar"><span class="loc-badge">307号室　シナモロール</span><span class="dt-money" id="room-dt"></span></div>
+    <div class="time-only-badge dt-money" id="room-dt"></div>
     <div class="stat-bars">
       <div class="sbc">😊 <div class="sb-bg"><div class="sb-fill sb-mood" id="mood-bar"></div></div></div>
       <div class="sbc">🍽 <div class="sb-bg"><div class="sb-fill sb-hunger" id="hunger-bar"></div></div></div>
     </div>
+    <div class="money-badge">💰 <span id="money-disp-room">3,000</span>円</div>
     <div class="walk-hint">背景クリックで移動・マウスで少し3D傾き</div>
     <div class="cinna-wrap" id="room-wrap" onclick="talkRoom(event)"><div class="cinna-shadow"></div><div id="room-flip" class="cinna-flip"><img class="cinna-char" id="room-char" src="sozai/cinna_normal.png" alt="シナモロール" /></div></div>
     <div class="dlg" id="room-dlg" onclick="talkRoom(event)">シナモロールがいます<br>ごきげんのようです</div>
@@ -283,6 +300,7 @@ body {
       <button class="icon-btn" onclick="showNotif('🎵 うた（準備中）')">🎵</button>
     </div>
     <div class="cinna-wrap park" id="park-wrap" onclick="talkPark(event)"><div class="cinna-shadow"></div><div id="park-flip" class="cinna-flip"><img class="cinna-char" id="park-char" src="sozai/cinna_normal.png" alt="シナモロール" /></div></div>
+    <img id="water-overlay" src="sozai/water.png" alt="" />
     <div class="money-badge">💰 <span id="money-disp">3,000</span>円</div>
     <div class="walk-hint">🐾 背景クリックで移動</div>
     <div class="dlg" id="park-dlg" onclick="talkPark(event)">公園でのんびりしています♪</div>
@@ -313,17 +331,17 @@ body {
   </div>
 
   <div class="overlay" id="food-overlay"><div class="panel"><h3>🍽 たべものをあげる</h3><div class="food-grid">
-    <div class="food-item" onclick="giveFood('シナモンロール','🍩',28,22,'happy')"><span class="food-emoji">🍩</span>シナモンロール<br><span style="color:#ff9a3c;font-size:12px;">★お気に入り！</span></div>
-    <div class="food-item" onclick="giveFood('ケーキ','🎂',14,20,'happy')"><span class="food-emoji">🎂</span>ケーキ</div>
-    <div class="food-item" onclick="giveFood('プリン','🍮',12,18,'happy')"><span class="food-emoji">🍮</span>プリン</div>
-    <div class="food-item" onclick="giveFood('からいもの','🌶️',-22,12,'sad')"><span class="food-emoji">🌶️</span>からいもの<br><span style="color:#e44;font-size:12px;">★きらい！</span></div>
+    <div class="food-item" onclick="giveFood('シナモンロール','🍩',28,22,'happy',300)"><span class="food-emoji">🍩</span>シナモンロール<br><span style="color:#ff9a3c;font-size:12px;">★お気に入り！</span><br><span style="color:#e8a000;font-size:12px;">300円</span></div>
+    <div class="food-item" onclick="giveFood('ケーキ','🎂',14,20,'happy',200)"><span class="food-emoji">🎂</span>ケーキ<br><span style="color:#e8a000;font-size:12px;">200円</span></div>
+    <div class="food-item" onclick="giveFood('プリン','🍮',12,18,'happy',150)"><span class="food-emoji">🍮</span>プリン<br><span style="color:#e8a000;font-size:12px;">150円</span></div>
+    <div class="food-item" onclick="giveFood('からいもの','🌶️',-22,12,'sad',140)"><span class="food-emoji">🌶️</span>からいもの<br><span style="color:#e44;font-size:12px;">🤮</span><br><span style="color:#e8a000;font-size:12px;">80円</span></div>
   </div><div style="text-align:center;"><button class="btn btn-gray" onclick="closeFood()">やめる</button></div></div></div>
 
   <div class="overlay" id="eat-overlay"><div class="panel"><h3 id="eat-title">たべています...</h3><div class="eat-panel"><img id="eat-char-img" src="sozai/cinna_eat.png" alt="食事中" /><div class="eat-info"><span style="font-size:38px;" id="eat-emoji">🍩</span><div style="font-size:14px;color:#555;"><div id="eat-name" style="font-weight:bold;margin-bottom:3px;"></div><div id="eat-sub">おいしそうに食べています</div></div></div><div id="eat-comment" style="font-size:16px;color:#7bb8e8;font-weight:bold;text-align:center;"></div></div></div></div>
 </div>
 
 <script>
-const G = { mood:80, hunger:60, money:3000, scene:'exterior', prevScene:'room', dlgIdx:0, weather:'clear' };
+const G = { mood:80, hunger:60, money:2000, scene:'exterior', prevScene:'room', dlgIdx:0, weather:'clear' };
 const SPRITES = {
   normal:'sozai/cinna_normal.png',
   happy:'sozai/cinna_happy.png',
@@ -380,8 +398,10 @@ function updateAll(){
     if(e) e.textContent = t;
   });
 
-  const moneyDisp = document.getElementById('money-disp');
-  if(moneyDisp) moneyDisp.textContent = G.money.toLocaleString();
+  ['money-disp', 'money-disp-room'].forEach(id => {
+    const e = document.getElementById(id);
+    if(e) e.textContent = G.money.toLocaleString();
+  });
 
   const mp = Math.max(0, Math.min(100, G.mood));
   const hp = Math.max(0, Math.min(100, G.hunger));
@@ -539,8 +559,13 @@ function talkPark(e){
 function openFood(){ document.getElementById('food-overlay').classList.add('active'); }
 function closeFood(){ document.getElementById('food-overlay').classList.remove('active'); }
 
-function giveFood(name, emoji, moodDelta, hungerGain, reaction){
+function giveFood(name, emoji, moodDelta, hungerGain, reaction, price){
+  if(G.money < price){
+    showNotif(`お金が足りないよ！（${price}円必要）`);
+    return;
+  }
   closeFood();
+  G.money -= price;
   G.mood = Math.max(0, Math.min(100, G.mood + moodDelta));
   G.hunger = Math.min(100, G.hunger + hungerGain);
   const happy = reaction === 'happy';
@@ -571,7 +596,7 @@ function giveFood(name, emoji, moodDelta, hungerGain, reaction){
 }
 
 function earnMoney(){
-  const got = Math.floor(Math.random()*600) + 200;
+  const got = Math.floor(Math.random()*91) + 10;
   G.money += got;
   showNotif(`+${got.toLocaleString()}円 ゲット！`);
   setDlg('park', `おでかけして${got}円もらったよ♪`);
@@ -591,8 +616,26 @@ function showNotif(txt){
 
 function pick(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
 
+function sprayFountain(){
+  const el = document.getElementById('water-overlay');
+  if(!el || el.classList.contains('spraying')) return;
+  el.classList.add('spraying');
+  setDlg('park', '噴水がふき出した！✨');
+  setTimeout(() => el.classList.remove('spraying'), 2000);
+}
+
 function walkTo(e, scene){
   if(e.target.classList.contains('btn')) return;
+
+  if(scene === 'park'){
+    const rect = e.currentTarget.getBoundingClientRect();
+    const xR = (e.clientX - rect.left) / rect.width;
+    const yR = (e.clientY - rect.top)  / rect.height;
+    if(xR >= 0.36 && xR <= 0.64 && yR >= 0.18 && yR <= 0.54){
+      sprayFountain();
+      return;
+    }
+  }
 
   const wrap = document.getElementById(scene + '-wrap');
   if(!wrap) return;
@@ -609,7 +652,6 @@ function walkTo(e, scene){
   const maxYPx = rect.height - (scene === 'room' ? 95 : 70);
   yPx = Math.max(minYPx, Math.min(maxYPx, yPx));
 
-  // 移動方向に応じてスプライト反転
   const flipEl = document.getElementById(scene + '-flip');
   const curLeft = parseFloat(wrap.style.left) || rect.width / 2;
   if(flipEl) flipEl.classList.toggle('flipped', xPx < curLeft - 5);
