@@ -1,3 +1,5 @@
 test
 .claude
 .git
+node_modules
+dist
