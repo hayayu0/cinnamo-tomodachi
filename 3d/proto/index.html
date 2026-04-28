@@ -50,10 +50,12 @@
         letter-spacing: 0.1em;
       }
       #loading-overlay.visible { display: flex; }
+      #description { position: fixed; top: 50px; margin-left: 16px; font-weight: bold; color: darkblue; }
     </style>
   </head>
   <body>
     <div id="dev-banner">【開発中】3Dサンリオ</div>
+    <div id="description">タップした方に向く</div>
     <div id="loading-overlay">切替中…</div>
     <button id="change-btn" type="button">キャラ変更</button>
     <script type="module" src="./main.js"></script>
