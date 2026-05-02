@@ -403,6 +403,13 @@ function updateBubblePositions() {
 const camTarget = new THREE.Vector3();
 const _tmpVec = new THREE.Vector3();
 
+// アスペクト比から「横長らしさ」を 0(細長い縦) → 1(横長) で滑らかに返す。
+// これを使ってカメラ位置とFOVを補間し、1:1境界でズームが急変するのを防ぐ。
+function aspectT() {
+  const aspect = window.innerWidth / window.innerHeight;
+  return THREE.MathUtils.clamp((aspect - 0.6) / 1.0, 0, 1); // 0.6→0, 1.6→1
+}
+
 function updateCamera() {
   const playerDef = getPlayerDef();
   if (!playerDef) return;
@@ -410,7 +417,10 @@ function updateCamera() {
   if (!ch?.group) return;
   _tmpVec.set(ch.pos.x, 0, ch.pos.y);
   camTarget.lerp(_tmpVec, 0.06);
-  camera.position.set(camTarget.x, camTarget.y + 3, camTarget.z + 5);
+  const t = aspectT();
+  const camY = THREE.MathUtils.lerp(6, 3, t);
+  const camZ = THREE.MathUtils.lerp(9, 5, t);
+  camera.position.set(camTarget.x, camTarget.y + camY, camTarget.z + camZ);
   camera.lookAt(camTarget.x, camTarget.y, camTarget.z);
 }
 
@@ -646,6 +656,7 @@ setInterval(updateClock, 10000);
 
 window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;
+  camera.fov = THREE.MathUtils.lerp(75, 60, aspectT());
   camera.updateProjectionMatrix();
   renderer.setSize(virtualW(), virtualH());
 });
