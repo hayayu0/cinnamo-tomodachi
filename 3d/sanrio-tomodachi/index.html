@@ -8,6 +8,9 @@
       * { margin: 0; padding: 0; box-sizing: border-box; }
       body { overflow: hidden; font-family: 'Hiragino Maru Gothic ProN', 'BIZ UDPGothic', sans-serif; }
 
+      /* iOSのダブルタップ拡大を抑止（ピンチズームは許可） */
+      button, canvas, #shop-panel, #give-panel { touch-action: manipulation; }
+
       #clock {
         position: fixed; top: 8px; right: 12px;
         background: rgba(255,255,255,0.88); border-radius: 12px;
