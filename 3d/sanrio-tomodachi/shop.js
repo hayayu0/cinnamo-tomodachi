@@ -9,11 +9,11 @@ export const SHOP_ITEMS = [
   { id: 'toy',      name: 'おもちゃ',       emoji: '🧸', price:  80,
     getMoodGain: ()    => 15,                              hungerGain:  0 },
   { id: 'ribbon',   name: 'リボン',         emoji: '🎀', price: 100,
-    getMoodGain: (id)  => id === 'kuromi' ? -10 : 18,     hungerGain:  0 },
+    getMoodGain: (id)  => 18,                              hungerGain:  0 },
   { id: 'cake',     name: 'ケーキ',         emoji: '🎂', price: 120,
     getMoodGain: ()    => 14,                              hungerGain: 20 },
   { id: 'pepper',   name: 'とうがらし',     emoji: '🌶️', price:  80,
-    getMoodGain: (id)  => id === 'kuromi' ? 20 : -20,     hungerGain:  5 },
+    getMoodGain: (id)  => 20,                              hungerGain:  5 },
   { id: 'cinnamon', name: 'シナモンロール', emoji: '🍩', price: 200,
     getMoodGain: ()    => 25,                              hungerGain: 22 },
 ];
@@ -55,7 +55,7 @@ export function setupShop({ getPlayerCharacter, onPurchase, onClose, onInsuffici
         if (!c) return;
         if (c.coins < item.price) { onInsufficientFunds?.(); return; }
         if (c.items.filter(i => i === item.id).length >= 99) return;
-        const favMult = item.id === c.def.favorite ? 2 : 1;
+        const favMult = item.id === c.def.favorite ? 2 : item.id === c.def.dislike ? -1 : 1;
         const delta  = item.getMoodGain(c.def.id) * favMult;
         c.coins  -= item.price;
         c.mood    = Math.max(0, Math.min(100, c.mood + delta));

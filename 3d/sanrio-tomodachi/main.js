@@ -563,7 +563,7 @@ function renderGivePanel() {
       givePanelEl.classList.remove('open');
       showNotification(`${item.emoji} ${tCh.def.name}に${item.name}をあげた！`);
       animateGift(pCh, tCh, item.emoji, () => {
-        const favMult = item.id === tCh.def.favorite ? 2 : 1;
+        const favMult = item.id === tCh.def.favorite ? 2 : item.id === tCh.def.dislike ? -1 : 1;
         const delta = item.getMoodGain(tCh.def.id) * favMult;
         tCh.mood   = Math.max(0, Math.min(100, tCh.mood + delta));
         tCh.hunger = Math.min(100, tCh.hunger + item.hungerGain);

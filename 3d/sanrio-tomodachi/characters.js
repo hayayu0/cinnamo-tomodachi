@@ -15,10 +15,11 @@ export const CHARACTER_DEFS = [
     mood: 80,
     hunger: 60,
     favorite: 'cinnamon',
+    dislike: 'pepper',
     giftReactions: {
       thanks: 'ありがとう！',
-      special: 'わぁ！ありがとう！',
-      no: 'うわーん...これはキライかも',
+      special: 'やったー！ありがとう！',
+      no: 'うわーん💦これはキライかも',
     },
     dialogues: [
       'えへへ〜ありがとう！',
@@ -66,6 +67,7 @@ export const CHARACTER_DEFS = [
     mood: 85,
     hunger: 70,
     favorite: 'flower',
+    dislike: 'pepper',
     giftReactions: {
       thanks: 'ありがとう！',
       special: 'わぁ！ありがとう！',
@@ -113,6 +115,7 @@ export const CHARACTER_DEFS = [
     mood: 60,
     hunger: 50,
     favorite: 'pepper',
+    dislike: 'ribbon',
     giftReactions: {
       thanks: 'サンキュ',
       special: 'すんごくサンキュ！',
@@ -160,6 +163,7 @@ export const CHARACTER_DEFS = [
     mood: 75,
     hunger: 65,
     favorite: 'milk',
+    dislike: 'pepper',
     giftReactions: {
       thanks: 'ありがとでちゅ',
       special: 'すごくありがとでちゅ',
