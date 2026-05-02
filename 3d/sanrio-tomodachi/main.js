@@ -79,6 +79,7 @@ function createRuntime(def) {
     wanderTimer: 1 + Math.random() * 2,
     bubble: createBubble(),
     bubbleTimer: 0,
+    playerBubbleTimer: 0,
     dialogueTimer: 4 + Math.random() * 8,  // 最初のセリフまでのウェイト
     coins: def.startCoins ?? 500,
     mood: def.mood ?? 80,
@@ -352,9 +353,14 @@ const DIALOGUE_INTERVAL_MAX = 30;
 const _headVec = new THREE.Vector3();
 
 function updateNpcDialogue(ch, delta) {
-  // プレイヤーになったら吹き出し非表示
   if (ch.def.isPlayer) {
-    ch.bubble.style.display = 'none';
+    if (ch.playerBubbleTimer > 0) {
+      ch.playerBubbleTimer -= delta;
+      ch.bubble.style.opacity = ch.playerBubbleTimer < 0.6 ? String(ch.playerBubbleTimer / 0.6) : '1';
+      if (ch.playerBubbleTimer <= 0) ch.bubble.style.display = 'none';
+    } else {
+      ch.bubble.style.display = 'none';
+    }
     ch.bubbleTimer = 0;
     return;
   }
@@ -584,6 +590,19 @@ giveBtnEl.addEventListener('click', () => {
 
 document.getElementById('give-close').addEventListener('click', () => {
   givePanelEl.classList.remove('open');
+});
+
+document.getElementById('talk-btn').addEventListener('click', () => {
+  const playerCh = characters[getPlayerDef()?.id];
+  if (!playerCh) return;
+  const lines = playerCh.def.dialogues;
+  playerCh.bubble.textContent = lines[Math.floor(Math.random() * lines.length)];
+  playerCh.bubble.style.display = 'block';
+  playerCh.bubble.style.opacity = '1';
+  playerCh.playerBubbleTimer = DIALOGUE_SHOW;
+  const btn = document.getElementById('talk-btn');
+  btn.disabled = true;
+  setTimeout(() => { btn.disabled = false; }, 1000);
 });
 
 document.getElementById('change-btn').addEventListener('click', () => {
