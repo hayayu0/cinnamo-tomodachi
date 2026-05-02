@@ -14,6 +14,7 @@ const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 document.body.appendChild(renderer.domElement);
+renderer.domElement.style.touchAction = 'none'; // Safari touch対応
 
 scene.add(new THREE.HemisphereLight(0xffffff, 0x88aa88, 2.0));
 const dirLight = new THREE.DirectionalLight(0xffffff, 1.5);
@@ -103,7 +104,7 @@ const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
 const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
 
-window.addEventListener('click', (event) => {
+window.addEventListener('pointerup', (event) => {
   if (!currentCharacter) return;
 
   mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
