@@ -2,6 +2,8 @@
   "name": "cinnamo-tomodachi",
   "private": true,
   "scripts": {
-    "build": "cd 3d/proto && npm ci && npm run build && cd ../.. && mkdir -p _dist/proto && cp -r 3d/proto/dist/* _dist/proto/ && cd 3d/sanrio-tomodachi && npm ci && npm run build && cd ../.. && mkdir -p _dist/sanrio-tomodachi && cp -r 3d/sanrio-tomodachi/dist/* _dist/sanrio-tomodachi/ && cp -r index.html _dist/"
+    "build:proto":  "cd 3d/proto && npm ci && npm run build && cd ../.. && mkdir -p _dist/proto && cp -r 3d/proto/dist/* _dist/proto/",
+    "build:sanrio": "cd 3d/sanrio-tomodachi && npm ci && npm run build && cd ../.. && mkdir -p _dist/sanrio-tomodachi && cp -r 3d/sanrio-tomodachi/dist/* _dist/sanrio-tomodachi/",
+    "build": "npm run build:proto && npm run build:sanrio && cp -r index.html _dist/ && cp -r sozai/* _dist/"
   }
 }

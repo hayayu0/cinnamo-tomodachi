@@ -1,7 +1,6 @@
 // キャラクター定義
 // isPlayer: true のキャラがユーザー操作対象
 // unlocked: false は後から登場するキャラ
-
 export const CHARACTER_DEFS = [
   {
     id: 'cinnamoroll',
@@ -12,9 +11,15 @@ export const CHARACTER_DEFS = [
     isPlayer: true,
     unlocked: true,
     initPos: { x: 0, z: 0 },
-    startCoins: 500,
+    startCoins: 600,
     mood: 80,
     hunger: 60,
+    favorite: 'cinnamon',
+    giftReactions: {
+      thanks: 'ありがとう！',
+      special: 'わぁ！ありがとう！',
+      no: 'うわーん...これはキライかも',
+    },
     dialogues: [
       'えへへ〜ありがとう！',
       'いっしょにいると、たのしいね♪',
@@ -57,9 +62,15 @@ export const CHARACTER_DEFS = [
     isPlayer: false,
     unlocked: true,
     initPos: { x: -2.5, z: -1.5 },
-    startCoins: 500,
+    startCoins: 600,
     mood: 85,
     hunger: 70,
+    favorite: 'flower',
+    giftReactions: {
+      thanks: 'ありがとう！',
+      special: 'わぁ！ありがとう！',
+      no: 'えー...ニガテかも',
+    },
     dialogues: [
       'マイメロだよ〜♪ なかよくしてね！',
       'ピンクってかわいいよね〜',
@@ -98,9 +109,15 @@ export const CHARACTER_DEFS = [
     isPlayer: false,
     unlocked: false,   // 後から登場
     initPos: { x: 2.5, z: -1.5 },
-    startCoins: 500,
+    startCoins: 600,
     mood: 60,
     hunger: 50,
+    favorite: 'pepper',
+    giftReactions: {
+      thanks: 'サンキュ',
+      special: 'すんごくサンキュ！',
+      no: 'うーん...あたいには似合わないな',
+    },
     dialogues: [
       'べ、べつにあんたのことなんか...',
       'クロミさまのお通りよ！',
@@ -139,9 +156,15 @@ export const CHARACTER_DEFS = [
     isPlayer: false,
     unlocked: false,   // 後から登場
     initPos: { x: 0, z: -3 },
-    startCoins: 500,
+    startCoins: 400,
     mood: 75,
     hunger: 65,
+    favorite: 'milk',
+    giftReactions: {
+      thanks: 'ありがとでちゅ',
+      special: 'すごくありがとでちゅ',
+      no: 'いらないでちゅ！',
+    },
     dialogues: [
       'ミルクだよ〜♪',
       'ふわふわ〜',

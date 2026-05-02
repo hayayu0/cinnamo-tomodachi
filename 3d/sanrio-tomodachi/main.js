@@ -17,6 +17,9 @@ const MODEL_URLS = {
 };
 
 // ---- Scene ----
+function virtualW() { return Math.max(640, window.innerWidth); }
+function virtualH() { return Math.round(virtualW() * window.innerHeight / window.innerWidth); }
+
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x87ceeb);
 
@@ -25,10 +28,10 @@ camera.position.set(0, 5, 5);
 camera.lookAt(0, 0, 0);
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setSize(virtualW(), virtualH());
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 document.body.appendChild(renderer.domElement);
-renderer.domElement.style.touchAction = 'none'; // Safari touch対応
+renderer.domElement.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;touch-action:none;';
 
 scene.add(new THREE.HemisphereLight(0xffffff, 0x88aa88, 2.0));
 const dirLight = new THREE.DirectionalLight(0xffffff, 1.5);
@@ -49,8 +52,8 @@ buildWorld(scene, ground);
 const MOVE_SPEED = 2.5;
 const POP_DURATION = 0.3;
 const NPC_WANDER_RADIUS = 3;
-const NPC_WANDER_MIN = 2;
-const NPC_WANDER_MAX = 6;
+const NPC_WANDER_MIN = 4;
+const NPC_WANDER_MAX = 12;
 
 // ---- Character runtime state ----
 // characters: id -> { def, group, glowMaterials, pos(Vector2=XZ), targetPos(Vector2=XZ),
@@ -330,21 +333,13 @@ function animateGift(fromCh, toCh, emoji, onArrive) {
   requestAnimationFrame(frame);
 }
 
-// ---- NPC セリフ ----
-const GIFT_THANKS = {
-  kuromi:      'サンキュ',
-  mymelody:    'ありがとう',
-  cinnamoroll: 'ありがとう',
-  miruku:      'ありがとでちゅ',
-};
-
-function showThanks(ch) {
-  const text = GIFT_THANKS[ch.def.id] ?? 'ありがとう';
-  ch.bubble.textContent = text;
+function showReaction(ch, key) {
+  const r = ch.def.giftReactions ?? {};
+  ch.bubble.textContent = r[key] ?? 'ありがとう';
   ch.bubble.style.display = 'block';
   ch.bubble.style.opacity = '1';
-  ch.bubbleTimer    = DIALOGUE_SHOW;
-  ch.dialogueTimer  = DIALOGUE_INTERVAL_MIN + Math.random() * (DIALOGUE_INTERVAL_MAX - DIALOGUE_INTERVAL_MIN);
+  ch.bubbleTimer   = DIALOGUE_SHOW;
+  ch.dialogueTimer = DIALOGUE_INTERVAL_MIN + Math.random() * (DIALOGUE_INTERVAL_MAX - DIALOGUE_INTERVAL_MIN);
 }
 
 const DIALOGUE_SHOW = 3.5;
@@ -463,15 +458,15 @@ function updatePlayerLabel() {
   updateStatusBars();
 }
 
-// mood/hunger 時間経過による減少 (サンプル参考: 20秒ごと)
+// mood/hunger 時間経過による減少 (1分ごと: 気分-1%, おなか-3%)
 setInterval(() => {
   for (const id in characters) {
     const ch = characters[id];
-    ch.hunger = Math.max(0, ch.hunger - 1);
-    ch.mood   = Math.max(0, ch.mood   - 0.5);
+    ch.hunger = Math.max(0, ch.hunger - 3);
+    ch.mood   = Math.max(0, ch.mood   - 1);
   }
   updateStatusBars();
-}, 20000);
+}, 60000);
 
 const shop = setupShop({
   getPlayerCharacter: () => {
@@ -545,15 +540,16 @@ function renderGivePanel() {
   SHOP_ITEMS.forEach((item) => {
     const owned   = Math.min(playerCh.items.filter(i => i === item.id).length, 99);
     const canGive = owned >= 1;
+    const isFav   = targetCh && item.id === targetCh.def.favorite;
 
     const card = document.createElement('div');
-    card.className = 'shop-item' + (item.special ? ' shop-item-special' : '');
+    card.className = 'shop-item' + (isFav ? ' shop-item-special' : '');
     card.innerHTML = `
       <div class="item-emoji-wrap">
         <span class="item-emoji">${item.emoji}</span>
         ${owned > 0 ? `<span class="item-badge">${owned}</span>` : ''}
       </div>
-      <div class="item-name">${item.name}${item.special ? ' <span class="star-badge">★</span>' : ''}</div>
+      <div class="item-name">${item.name}${isFav ? ' <span class="star-badge">★</span>' : ''}</div>
       <button class="buy-btn give-item-btn" type="button"${canGive ? '' : ' disabled'}>あげる</button>
     `;
     card.querySelector('.give-item-btn').addEventListener('click', () => {
@@ -567,15 +563,20 @@ function renderGivePanel() {
       givePanelEl.classList.remove('open');
       showNotification(`${item.emoji} ${tCh.def.name}に${item.name}をあげた！`);
       animateGift(pCh, tCh, item.emoji, () => {
-        const delta = item.getMoodGain(tCh.def.id);
+        const favMult = item.id === tCh.def.favorite ? 2 : 1;
+        const delta = item.getMoodGain(tCh.def.id) * favMult;
         tCh.mood   = Math.max(0, Math.min(100, tCh.mood + delta));
         tCh.hunger = Math.min(100, tCh.hunger + item.hungerGain);
-        if (delta >= 0) {
-          triggerPop(tCh);
-          showThanks(tCh);
-        } else {
+        if (delta < 0) {
           spawnParticles(tCh, false);
           triggerShake(tCh);
+          showReaction(tCh, 'no');
+        } else if (item.id === tCh.def.favorite) {
+          triggerPop(tCh);
+          showReaction(tCh, 'special');
+        } else {
+          triggerPop(tCh);
+          showReaction(tCh, 'thanks');
         }
       });
     });
@@ -646,5 +647,5 @@ setInterval(updateClock, 10000);
 window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setSize(virtualW(), virtualH());
 });

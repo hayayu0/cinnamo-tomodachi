@@ -2,7 +2,7 @@
 export const SHOP_ITEMS = [
   { id: 'flower',   name: 'お花',           emoji: '🌸', price:  30,
     getMoodGain: ()    => 8,                               hungerGain:  0 },
-  { id: 'candy',    name: 'あめ',           emoji: '🍬', price:  40,
+  { id: 'milk',     name: 'ミルク',         emoji: '🍼', price:  40,
     getMoodGain: ()    => 5,                               hungerGain:  5 },
   { id: 'cookie',   name: 'クッキー',       emoji: '🍪', price:  60,
     getMoodGain: ()    => 10,                              hungerGain: 12 },
@@ -15,7 +15,7 @@ export const SHOP_ITEMS = [
   { id: 'pepper',   name: 'とうがらし',     emoji: '🌶️', price:  80,
     getMoodGain: (id)  => id === 'kuromi' ? 20 : -20,     hungerGain:  5 },
   { id: 'cinnamon', name: 'シナモンロール', emoji: '🍩', price: 200,
-    getMoodGain: ()    => 25,                              hungerGain: 22, special: true },
+    getMoodGain: ()    => 25,                              hungerGain: 22 },
 ];
 
 // getPlayerCharacter: () => runtime | null
@@ -37,15 +37,16 @@ export function setupShop({ getPlayerCharacter, onPurchase, onClose, onInsuffici
 
     SHOP_ITEMS.forEach((item) => {
       const owned = Math.min(ch.items.filter(i => i === item.id).length, 99);
+      const isFav = item.id === ch.def.favorite;
 
       const card = document.createElement('div');
-      card.className = 'shop-item' + (item.special ? ' shop-item-special' : '');
+      card.className = 'shop-item' + (isFav ? ' shop-item-special' : '');
       card.innerHTML = `
         <div class="item-emoji-wrap">
           <span class="item-emoji">${item.emoji}</span>
           ${owned > 0 ? `<span class="item-badge">${owned}</span>` : ''}
         </div>
-        <div class="item-name">${item.name}${item.special ? ' <span class="star-badge">★</span>' : ''}</div>
+        <div class="item-name">${item.name}${isFav ? ' <span class="star-badge">★</span>' : ''}</div>
         <div class="item-price">${item.price}円</div>
         <button class="buy-btn" type="button">購入</button>
       `;
@@ -54,7 +55,8 @@ export function setupShop({ getPlayerCharacter, onPurchase, onClose, onInsuffici
         if (!c) return;
         if (c.coins < item.price) { onInsufficientFunds?.(); return; }
         if (c.items.filter(i => i === item.id).length >= 99) return;
-        const delta  = item.getMoodGain(c.def.id);
+        const favMult = item.id === c.def.favorite ? 2 : 1;
+        const delta  = item.getMoodGain(c.def.id) * favMult;
         c.coins  -= item.price;
         c.mood    = Math.max(0, Math.min(100, c.mood + delta));
         c.hunger  = Math.min(100, c.hunger + item.hungerGain);
