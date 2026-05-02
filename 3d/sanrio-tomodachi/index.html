@@ -42,7 +42,7 @@
       /* ── ボタン類 ── */
       #change-btn {
         position: fixed; left: 16px; bottom: 16px; z-index: 10;
-        font-size: 11px; padding: 7px 13px; cursor: pointer;
+        font-size: 16px; padding: 7px 13px; cursor: pointer;
         border: none; border-radius: 14px; background: #ffb6c1;
         color: #fff; font-weight: bold;
         box-shadow: 0 2px 8px rgba(0,0,0,0.25);
@@ -51,7 +51,7 @@
 
       #talk-btn {
         position: fixed; left: 16px; bottom: 52px; z-index: 10;
-        font-size: 11px; padding: 7px 13px; cursor: pointer;
+        font-size: 16px; padding: 7px 13px; cursor: pointer;
         border: none; border-radius: 14px; background: #7bb8e8;
         color: #fff; font-weight: bold;
         box-shadow: 0 2px 8px rgba(0,0,0,0.25);
@@ -61,7 +61,7 @@
 
       #shop-btn {
         position: fixed; right: 16px; bottom: 16px; z-index: 10;
-        font-size: 11px; padding: 7px 13px; cursor: pointer;
+        font-size: 16px; padding: 7px 13px; cursor: pointer;
         border: none; border-radius: 14px; background: #b088e8;
         color: #fff; font-weight: bold;
         box-shadow: 0 2px 8px rgba(0,0,0,0.25);
@@ -70,7 +70,7 @@
 
       #give-btn {
         position: fixed; right: 108px; bottom: 16px; z-index: 10;
-        font-size: 11px; padding: 7px 13px; cursor: pointer;
+        font-size: 16px; padding: 7px 13px; cursor: pointer;
         border: none; border-radius: 14px; background: #f08030;
         color: #fff; font-weight: bold;
         box-shadow: 0 2px 8px rgba(0,0,0,0.25);
@@ -80,7 +80,7 @@
 
       #approach-btn {
         position: fixed; right: 108px; bottom: 52px; z-index: 10;
-        font-size: 11px; padding: 7px 13px; cursor: pointer;
+        font-size: 16px; padding: 7px 13px; cursor: pointer;
         border: none; border-radius: 14px; background: #30b090;
         color: #fff; font-weight: bold;
         box-shadow: 0 2px 8px rgba(0,0,0,0.25);
@@ -105,9 +105,9 @@
         display: flex; justify-content: space-between; align-items: center;
         margin-bottom: 5px;
       }
-      #give-title       { font-size: 11px; font-weight: bold; color: #e06010; }
-      #give-target-name { font-size: 9px; color: #888; }
-      #give-close       { background: none; border: none; font-size: 15px;
+      #give-title       { font-size: 16px; font-weight: bold; color: #e06010; }
+      #give-target-name { font-size: 13px; color: #888; }
+      #give-close       { background: none; border: none; font-size: 21px;
                           cursor: pointer; color: #aaa; line-height: 1; padding: 0 4px; }
       #give-items {
         display: grid;
@@ -136,11 +136,11 @@
         display: flex; justify-content: space-between; align-items: center;
         margin-bottom: 5px;
       }
-      #shop-title  { font-size: 11px; font-weight: bold; color: #9040c0; }
-      #shop-coins  { font-size: 9px; font-weight: bold; color: #c08020;
+      #shop-title  { font-size: 16px; font-weight: bold; color: #9040c0; }
+      #shop-coins  { font-size: 13px; font-weight: bold; color: #c08020;
                      background: #fff8e8; padding: 1px 4px;
                      border-radius: 14px; border: 1px solid #e8d090; }
-      #shop-close  { background: none; border: none; font-size: 15px;
+      #shop-close  { background: none; border: none; font-size: 21px;
                      cursor: pointer; color: #aaa; line-height: 1; padding: 0 4px; }
 
       #shop-items {
@@ -157,21 +157,21 @@
       }
       .shop-item-special { border-color: #f0b030; background: #fffbf0; }
       .item-emoji-wrap { display: flex; align-items: center; gap: 1px; }
-      .item-emoji    { font-size: 18px; }
+      .item-emoji    { font-size: 26px; }
       .item-badge {
         background: #d020a0; color: #fff;
-        border-radius: 50%; font-size: 6px; font-weight: bold;
+        border-radius: 50%; font-size: 9px; font-weight: bold;
         min-width: 11px; height: 11px;
         display: flex; align-items: center; justify-content: center;
         line-height: 1; padding: 0 2px;
       }
-      .item-name     { font-size: 8px; font-weight: bold; color: #444; }
-      .star-badge    { color: #e8a000; font-size: 7px; }
-      .item-price    { font-size: 8px; color: #b060b0; font-weight: bold; }
+      .item-name     { font-size: 11px; font-weight: bold; color: #444; }
+      .star-badge    { color: #e8a000; font-size: 10px; }
+      .item-price    { font-size: 11px; color: #b060b0; font-weight: bold; }
       .buy-btn {
         margin-top: 1px; padding: 3px 0; width: 100%;
         background: #c080e0; color: #fff; border: none;
-        border-radius: 6px; font-size: 8px; font-weight: bold; cursor: pointer;
+        border-radius: 6px; font-size: 11px; font-weight: bold; cursor: pointer;
       }
       .buy-btn:hover:not(:disabled) { background: #a060c0; }
       .buy-btn:disabled { background: #ddd; color: #aaa; cursor: not-allowed; }
@@ -182,7 +182,7 @@
         position: fixed; top: 50%; left: 50%;
         transform: translate(-50%, -50%);
         background: rgba(255,230,255,0.97); color: #c04080;
-        font-size: 24px; font-weight: bold;
+        font-size: 30px; font-weight: bold;
         padding: 16px 32px; border-radius: 20px; z-index: 200;
         box-shadow: 0 4px 20px rgba(200,100,150,0.4);
         pointer-events: none;

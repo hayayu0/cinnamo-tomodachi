@@ -17,7 +17,7 @@ const MODEL_URLS = {
 };
 
 // ---- Scene ----
-function virtualW() { return Math.max(640, window.innerWidth); }
+function virtualW() { return Math.max(720, window.innerWidth); }
 function virtualH() { return Math.round(virtualW() * window.innerHeight / window.innerWidth); }
 
 const scene = new THREE.Scene();
