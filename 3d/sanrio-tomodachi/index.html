@@ -3,17 +3,17 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>sanrio-park [開発中]</title>
+    <title>sanrio トモダチコレクション</title>
     <style>
       * { margin: 0; padding: 0; box-sizing: border-box; }
-      body { overflow: hidden; }
+      body { overflow: hidden; font-family: 'Hiragino Maru Gothic ProN', 'BIZ UDPGothic', sans-serif; }
 
-      #dev-banner {
-        position: fixed; top: 0; left: 0; right: 0;
-        background: rgba(255, 200, 0, 0.85); color: #555;
-        text-align: center; padding: 6px 0;
-        font-size: 14px; font-weight: bold; z-index: 100;
-        pointer-events: none; letter-spacing: 0.05em;
+      #clock {
+        position: fixed; top: 8px; right: 12px;
+        background: rgba(255,255,255,0.88); border-radius: 12px;
+        padding: 5px 14px; z-index: 30;
+        font-size: 14px; font-weight: bold; color: #555;
+        pointer-events: none;
       }
 
       #description {
@@ -22,77 +22,252 @@
         pointer-events: none;
       }
 
-      #player-label {
+      /* ── 左下: プレイヤー情報 ── */
+      #player-info {
         position: fixed; left: 16px; bottom: 72px; z-index: 10;
-        font-size: 14px; font-weight: bold; color: #333;
-        background: rgba(255, 255, 255, 0.85); padding: 4px 12px;
-        border-radius: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+        background: rgba(255,255,255,0.88);
+        border-radius: 14px; padding: 7px 12px;
+        box-shadow: 0 1px 6px rgba(0,0,0,0.18);
+        display: flex; flex-direction: column; gap: 5px;
       }
+      #player-label { font-size: 14px; font-weight: bold; color: #333; }
+      #coins-disp   { font-size: 12px; font-weight: bold; color: #c08020; }
 
+      .sbc { display: flex; align-items: center; gap: 5px; font-size: 12px; }
+      .sb-bg { width: 72px; height: 8px; background: #ddd; border-radius: 4px; overflow: hidden; }
+      .sb-fill { height: 100%; border-radius: 4px; transition: width 0.5s; }
+      .sb-mood   { background: #ff9a3c; }
+      .sb-hunger { background: #5cc85c; }
+
+      /* ── ボタン類 ── */
       #change-btn {
         position: fixed; left: 16px; bottom: 16px; z-index: 10;
-        font-size: 16px; padding: 10px 20px; cursor: pointer;
+        font-size: 15px; padding: 10px 18px; cursor: pointer;
         border: none; border-radius: 20px; background: #ffb6c1;
         color: #fff; font-weight: bold;
         box-shadow: 0 2px 8px rgba(0,0,0,0.25);
       }
       #change-btn:hover { background: #ff8fa3; }
 
+      #shop-btn {
+        position: fixed; right: 16px; bottom: 16px; z-index: 10;
+        font-size: 15px; padding: 10px 18px; cursor: pointer;
+        border: none; border-radius: 20px; background: #b088e8;
+        color: #fff; font-weight: bold;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+      }
+      #shop-btn:hover { background: #9060d0; }
+
+      #give-btn {
+        position: fixed; right: 152px; bottom: 16px; z-index: 10;
+        font-size: 15px; padding: 10px 18px; cursor: pointer;
+        border: none; border-radius: 20px; background: #f08030;
+        color: #fff; font-weight: bold;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+        display: none;
+      }
+      #give-btn:hover { background: #d06010; }
+
+      #approach-btn {
+        position: fixed; right: 270px; bottom: 16px; z-index: 10;
+        font-size: 15px; padding: 10px 18px; cursor: pointer;
+        border: none; border-radius: 20px; background: #30b090;
+        color: #fff; font-weight: bold;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+        display: none;
+      }
+      #approach-btn:hover { background: #208870; }
+
+      #give-panel {
+        position: fixed; bottom: 0; left: 0; right: 0;
+        background: #fff8f0;
+        border-top: 3px solid #f0c090;
+        border-radius: 20px 20px 0 0;
+        padding: 14px 14px 24px;
+        z-index: 150;
+        transform: translateY(100%);
+        transition: transform 0.3s ease;
+        max-height: 65vh;
+        overflow-y: auto;
+      }
+      #give-panel.open { transform: translateY(0); }
+      #give-header {
+        display: flex; justify-content: space-between; align-items: center;
+        margin-bottom: 12px;
+      }
+      #give-title       { font-size: 16px; font-weight: bold; color: #e06010; }
+      #give-target-name { font-size: 13px; color: #888; }
+      #give-close       { background: none; border: none; font-size: 22px;
+                          cursor: pointer; color: #aaa; line-height: 1; padding: 0 4px; }
+      #give-items {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 8px;
+      }
+      .give-item-btn { background: #f08030; }
+      .give-item-btn:hover:not(:disabled) { background: #d06010; }
+
+      /* ── ショップパネル ── */
+      #shop-panel {
+        position: fixed; bottom: 0; left: 0; right: 0;
+        background: #fff8ff;
+        border-top: 3px solid #d0a0d8;
+        border-radius: 20px 20px 0 0;
+        padding: 14px 14px 24px;
+        z-index: 150;
+        transform: translateY(100%);
+        transition: transform 0.3s ease;
+        max-height: 65vh;
+        overflow-y: auto;
+      }
+      #shop-panel.open { transform: translateY(0); }
+
+      #shop-header {
+        display: flex; justify-content: space-between; align-items: center;
+        margin-bottom: 12px;
+      }
+      #shop-title  { font-size: 16px; font-weight: bold; color: #9040c0; }
+      #shop-coins  { font-size: 13px; font-weight: bold; color: #c08020;
+                     background: #fff8e8; padding: 3px 10px;
+                     border-radius: 20px; border: 1px solid #e8d090; }
+      #shop-close  { background: none; border: none; font-size: 22px;
+                     cursor: pointer; color: #aaa; line-height: 1; padding: 0 4px; }
+
+      #shop-items {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 8px;
+      }
+
+      .shop-item {
+        background: #fff; border: 2px solid #e8c8f0;
+        border-radius: 12px; padding: 8px 4px 7px;
+        text-align: center; display: flex;
+        flex-direction: column; align-items: center; gap: 2px;
+      }
+      .shop-item-special { border-color: #f0b030; background: #fffbf0; }
+      .item-emoji-wrap { display: flex; align-items: center; gap: 3px; }
+      .item-emoji    { font-size: 26px; }
+      .item-badge {
+        background: #d020a0; color: #fff;
+        border-radius: 50%; font-size: 9px; font-weight: bold;
+        min-width: 16px; height: 16px;
+        display: flex; align-items: center; justify-content: center;
+        line-height: 1; padding: 0 2px;
+      }
+      .item-name     { font-size: 11px; font-weight: bold; color: #444; }
+      .star-badge    { color: #e8a000; font-size: 10px; }
+      .item-price    { font-size: 11px; color: #b060b0; font-weight: bold; }
+      .buy-btn {
+        margin-top: 3px; padding: 4px 0; width: 100%;
+        background: #c080e0; color: #fff; border: none;
+        border-radius: 8px; font-size: 11px; font-weight: bold; cursor: pointer;
+      }
+      .buy-btn:hover:not(:disabled) { background: #a060c0; }
+      .buy-btn:disabled { background: #ddd; color: #aaa; cursor: not-allowed; }
+
+      /* ── 通知・吹き出し ── */
       #notification {
         display: none;
         position: fixed; top: 50%; left: 50%;
         transform: translate(-50%, -50%);
-        background: rgba(255, 230, 255, 0.97); color: #c04080;
-        font-size: 26px; font-weight: bold;
-        padding: 18px 36px; border-radius: 20px; z-index: 200;
-        box-shadow: 0 4px 20px rgba(200, 100, 150, 0.4);
+        background: rgba(255,230,255,0.97); color: #c04080;
+        font-size: 24px; font-weight: bold;
+        padding: 16px 32px; border-radius: 20px; z-index: 200;
+        box-shadow: 0 4px 20px rgba(200,100,150,0.4);
         pointer-events: none;
       }
       #notification.visible { display: block; }
+      #notification.error { color: #ff1050; }
+
+      /* ── 感情パーティクル ── */
+      .emotion-particle {
+        position: fixed;
+        pointer-events: none;
+        z-index: 55;
+        font-size: 38px;
+        line-height: 1;
+        animation: particle-rise 1s ease-out forwards;
+      }
+      @keyframes particle-rise {
+        0%   { opacity: 0; transform: translateY(0)    scale(0.5); }
+        15%  { opacity: 1; transform: translateY(-18px) scale(1.2); }
+        100% { opacity: 0; transform: translateY(-90px) scale(1.0); }
+      }
+      .emotion-particle.shake { animation: particle-shake 1s ease-in-out forwards; }
+      @keyframes particle-shake {
+        0%   { opacity: 0; transform: translateY(0)    scale(0.6); }
+        8%   { opacity: 1; transform: translateY(-14px) scale(1.2); }
+        22%  {             transform: translateY( 8px)  scale(0.9); }
+        36%  {             transform: translateY(-11px) scale(1.1); }
+        50%  {             transform: translateY( 6px)  scale(0.95); }
+        64%  {             transform: translateY(-8px)  scale(1.05); }
+        78%  {             transform: translateY( 4px)  scale(0.97); }
+        90%  { opacity: 1; transform: translateY(-3px)  scale(1.0); }
+        100% { opacity: 0; transform: translateY( 0)    scale(0.9); }
+      }
 
       .speech-bubble {
         position: fixed;
-        background: #fff;
-        border: 2px solid #f0d0e0;
-        border-radius: 14px;
-        padding: 5px 11px;
-        font-size: 13px;
-        font-weight: bold;
-        color: #444;
-        pointer-events: none;
-        z-index: 40;
-        white-space: nowrap;
+        background: #fff; border: 2px solid #f0d0e0;
+        border-radius: 14px; padding: 5px 11px;
+        font-size: 20px; font-weight: bold; color: #444;
+        pointer-events: none; z-index: 40; white-space: nowrap;
         transform: translate(-50%, calc(-100% - 14px));
         box-shadow: 0 2px 8px rgba(0,0,0,0.12);
         transition: opacity 0.4s ease;
       }
       .speech-bubble::after {
-        content: '';
-        position: absolute;
-        top: 100%;
-        left: 50%;
+        content: ''; position: absolute; top: 100%; left: 50%;
         transform: translateX(-50%);
-        border: 7px solid transparent;
-        border-top-color: #f0d0e0;
+        border: 7px solid transparent; border-top-color: #f0d0e0;
       }
       .speech-bubble::before {
-        content: '';
-        position: absolute;
-        top: calc(100% - 1px);
-        left: 50%;
+        content: ''; position: absolute; top: calc(100% - 1px); left: 50%;
         transform: translateX(-50%);
-        border: 6px solid transparent;
-        border-top-color: #fff;
-        z-index: 1;
+        border: 6px solid transparent; border-top-color: #fff; z-index: 1;
       }
     </style>
   </head>
   <body>
-    <div id="dev-banner">【開発中】サンリオパーク</div>
     <div id="description">地面クリックで移動 ／ キャラクリックでリアクション</div>
-    <div id="player-label">▶ シナモロール 操作中</div>
+    <div id="clock"></div>
+
+    <!-- プレイヤー情報（左下） -->
+    <div id="player-info">
+      <div id="player-label">▶ シナモロール 操作中</div>
+      <div class="sbc">😊<div class="sb-bg"><div class="sb-fill sb-mood"   id="mood-fill"></div></div></div>
+      <div class="sbc">🍽<div class="sb-bg"><div class="sb-fill sb-hunger" id="hunger-fill"></div></div></div>
+      <div id="coins-disp">💰 <span id="coins-disp-value">500</span> 円</div>
+    </div>
+
     <div id="notification"></div>
+
     <button id="change-btn" type="button">プレイヤー切替</button>
+    <button id="approach-btn" type="button">🏃 近づく</button>
+    <button id="give-btn"    type="button">🎁 あげる</button>
+    <button id="shop-btn"    type="button">🛍 ショップ</button>
+
+    <!-- ショップパネル -->
+    <div id="shop-panel">
+      <div id="shop-header">
+        <div id="shop-title">🛍 ショップ</div>
+        <div id="shop-coins">💰 <span id="shop-coins-value">500</span> 円</div>
+        <button id="shop-close" type="button">✕</button>
+      </div>
+      <div id="shop-items"></div>
+    </div>
+
+    <!-- あげるパネル -->
+    <div id="give-panel">
+      <div id="give-header">
+        <div id="give-title">🎁 あげる</div>
+        <div id="give-target-name"></div>
+        <button id="give-close" type="button">✕</button>
+      </div>
+      <div id="give-items"></div>
+    </div>
+
     <script type="module" src="./main.js"></script>
   </body>
 </html>

@@ -12,6 +12,7 @@ export const CHARACTER_DEFS = [
     isPlayer: true,
     unlocked: true,
     initPos: { x: 0, z: 0 },
+    startCoins: 500,
     mood: 80,
     hunger: 60,
     dialogues: [
@@ -56,6 +57,7 @@ export const CHARACTER_DEFS = [
     isPlayer: false,
     unlocked: true,
     initPos: { x: -2.5, z: -1.5 },
+    startCoins: 500,
     mood: 85,
     hunger: 70,
     dialogues: [
@@ -96,6 +98,7 @@ export const CHARACTER_DEFS = [
     isPlayer: false,
     unlocked: false,   // 後から登場
     initPos: { x: 2.5, z: -1.5 },
+    startCoins: 500,
     mood: 60,
     hunger: 50,
     dialogues: [
@@ -136,6 +139,7 @@ export const CHARACTER_DEFS = [
     isPlayer: false,
     unlocked: false,   // 後から登場
     initPos: { x: 0, z: -3 },
+    startCoins: 500,
     mood: 75,
     hunger: 65,
     dialogues: [
@@ -147,19 +151,19 @@ export const CHARACTER_DEFS = [
       'いっしょにいようよ〜',
     ],
     npcDialogues: [
-      'ミルク、ここにいるよ〜',
+      'ミルク、ここにいるでちゅ',
       'ふわふわ〜♪',
       'あそぼ〜！',
-      'ミルク、お昼寝したいな〜',
-      '空がきれいだね〜ふわあ',
+      'ミルク、お昼寝したいでちゅ〜',
+      '空がきれいでちゅね〜ふわあ',
       'ミルク、夢の中でおそらとんだよ！',
       'なんか眠くなってきちゃった...',
-      'みんなのこと大好きだよ〜♪',
-      'ミルクのすきなもの、ミルクだよ！',
+      'みんなのこと大好きだよ〜ばぶ♪',
+      'ミルクのすきなものは、ミルク！',
       'ふわっ...なんかいい気持ち〜',
-      'ミルク、お花見てたの〜',
-      'いっしょにいようよ〜♪',
-      'ミルクねむい...でもあそびたい',
+      'ミルク、お花見てた〜',
+      'いっしょにいよ〜♪',
+      'ミルクねむい...でもあそぶのもすき〜',
       'ふふ〜♪ たのしいね',
       'あのね、ミルクね、うれしいんだ〜',
       'ミルク、ゆめのなかにいるみたい',
