@@ -374,7 +374,7 @@ function updateNpcDialogue(ch, delta) {
   ch.dialogueTimer -= delta;
   if (ch.dialogueTimer > 0) return;
 
-  const lines = ch.def.npcDialogues;
+  const lines = ch.def.dialogues;
   ch.bubble.textContent = lines[Math.floor(Math.random() * lines.length)];
   ch.bubble.style.display = 'block';
   ch.bubble.style.opacity = '1';
@@ -525,7 +525,7 @@ function approachNpc(targetId) {
   const dx   = targetCh.pos.x - playerCh.pos.x;
   const dz   = targetCh.pos.y - playerCh.pos.y;
   const dist = Math.hypot(dx, dz);
-  const STOP_DIST = 1.5;
+  const STOP_DIST = 1.1;
   if (dist <= STOP_DIST) return;
   const ratio = (dist - STOP_DIST) / dist;
   playerCh.targetPos.set(playerCh.pos.x + dx * ratio, playerCh.pos.y + dz * ratio);

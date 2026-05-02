@@ -46,9 +46,9 @@ export function setupShop({ getPlayerCharacter, onPurchase, onClose, onInsuffici
           <span class="item-emoji">${item.emoji}</span>
           ${owned > 0 ? `<span class="item-badge">${owned}</span>` : ''}
         </div>
-        <div class="item-name">${item.name}${isFav ? ' <span class="star-badge">★</span>' : ''}</div>
-        <div class="item-price">${item.price}円</div>
-        <button class="buy-btn" type="button">購入</button>
+        <div class="item-name">${item.name}</div>
+        <div class="item-price">${item.price}円<span class="star-badge ${isFav ? '' : 'nodisp'}">★</span></div>
+        <button class="buy-btn" type="button">買う</button>
       `;
       card.querySelector('.buy-btn').addEventListener('click', () => {
         const c = getPlayerCharacter();
