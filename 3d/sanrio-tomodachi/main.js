@@ -464,7 +464,7 @@ function updateStatusBars() {
 function updatePlayerLabel() {
   const def = getPlayerDef();
   const label = document.getElementById('player-label');
-  if (label && def) label.textContent = `▶ ${def.name} 操作中`;
+  if (label && def) label.textContent = `${def.name}`;
   updateStatusBars();
 }
 
