@@ -1,21 +1,21 @@
 // getMoodGain(characterId) で、キャラごとに効果が変わるアイテムに対応
 export const SHOP_ITEMS = [
-  { id: 'flower',   name: 'お花',           emoji: '🌸', price:  30,
-    getMoodGain: ()    => 8,                               hungerGain:  0 },
-  { id: 'milk',     name: 'ミルク',         emoji: '🍼', price:  40,
-    getMoodGain: ()    => 5,                               hungerGain:  5 },
-  { id: 'cookie',   name: 'クッキー',       emoji: '🍪', price:  60,
-    getMoodGain: ()    => 10,                              hungerGain: 12 },
-  { id: 'toy',      name: 'おもちゃ',       emoji: '🧸', price:  80,
-    getMoodGain: ()    => 15,                              hungerGain:  0 },
-  { id: 'ribbon',   name: 'リボン',         emoji: '🎀', price: 100,
-    getMoodGain: (id)  => 18,                              hungerGain:  0 },
-  { id: 'cake',     name: 'ケーキ',         emoji: '🎂', price: 120,
-    getMoodGain: ()    => 14,                              hungerGain: 20 },
-  { id: 'pepper',   name: 'とうがらし',     emoji: '🌶️', price:  80,
-    getMoodGain: (id)  => 20,                              hungerGain:  5 },
+  { id: 'flower',   name: 'お花',          emoji: '🌸', price:  30,
+    getMoodGain: ()    => 15,               hungerGain:  0 },
+  { id: 'milk',     name: 'ミルク',        emoji: '🍼', price:  40,
+    getMoodGain: ()    => 18,               hungerGain:  12 },
+  { id: 'cookie',   name: 'クッキー',      emoji: '🍪', price:  60,
+    getMoodGain: ()    => 15,              hungerGain: 12 },
+  { id: 'toy',      name: 'おもちゃ',      emoji: '🧸', price:  80,
+    getMoodGain: ()    => 15,              hungerGain:  0 },
+  { id: 'ribbon',   name: 'リボン',        emoji: '🎀', price: 100,
+    getMoodGain: (id)  => 18,              hungerGain:  0 },
+  { id: 'cake',     name: 'ケーキ',        emoji: '🎂', price: 120,
+    getMoodGain: ()    => 15,              hungerGain: 12 },
+  { id: 'pepper',   name: 'とうがらし',    emoji: '🌶️', price:  80,
+    getMoodGain: (id)  => 18,              hungerGain:  12 },
   { id: 'cinnamon', name: 'シナモンロール', emoji: '🍩', price: 200,
-    getMoodGain: ()    => 25,                              hungerGain: 22 },
+    getMoodGain: ()    => 18,              hungerGain: 12 },
 ];
 
 // getPlayerCharacter: () => runtime | null
@@ -59,7 +59,6 @@ export function setupShop({ getPlayerCharacter, onPurchase, onClose, onInsuffici
         const delta  = item.getMoodGain(c.def.id) * favMult;
         c.coins  -= item.price;
         c.mood    = Math.max(0, Math.min(100, c.mood + delta));
-        c.hunger  = Math.min(100, c.hunger + item.hungerGain);
         c.items.push(item.id);
         onPurchase(item, c, delta);
         render();

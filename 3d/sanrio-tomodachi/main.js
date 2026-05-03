@@ -88,6 +88,7 @@ function createRuntime(def) {
     mood: def.mood ?? 80,
     hunger: def.hunger ?? 60,
     items: [],
+    warningTimer: Math.random() * 6,
   };
 }
 
@@ -276,8 +277,11 @@ function updateShake(ch, delta) {
 }
 
 // ---- 感情パーティクル ----
-const POSITIVE_EMOJIS = ['💓', '✨', '🌟', '💕', '⭐'];
-const NEGATIVE_EMOJIS = ['🌪', '🌀', '💨', '😵', '💫'];
+const POSITIVE_EMOJIS = ['💓', '✨', '🌟', '💕', '😀', '😍'];
+const NEGATIVE_EMOJIS = ['🌪', '🌀', '😔', '😫', '💫', '💧'];
+const HUNGER_EMOJIS = ['🍴', '😩'];
+const BAD_MOOD_EMOJIS = ['👎', '🤮'];
+
 
 function spawnParticles(ch, positive) {
   if (!ch.group) return;
@@ -286,10 +290,7 @@ function spawnParticles(ch, positive) {
   _headVec.project(camera);
   if (_headVec.z > 1) return; // カメラの後ろ
 
-  const sx  = (_headVec.x + 1) / 2 * window.innerWidth;
-  const sy  = (-_headVec.y + 1) / 2 * window.innerHeight;
-  // 地面（画面下端）に向けて25%近づけた開始位置
-  const startY = sy + 0.25 * (window.innerHeight - sy);
+  const [sx, sy] = spawnParticlesPosition(_headVec.x);
   const emojis = positive ? POSITIVE_EMOJIS : NEGATIVE_EMOJIS;
 
   for (let i = 0; i < 4; i++) {
@@ -297,10 +298,60 @@ function spawnParticles(ch, positive) {
     p.className = 'emotion-particle' + (positive ? '' : ' shake');
     p.textContent = emojis[i % emojis.length];
     p.style.left = `${sx + (Math.random() - 0.5) * 60}px`;
-    p.style.top  = `${startY}px`;
+    p.style.top  = `${sy}px`;
     p.style.animationDelay = `${i * 0.13}s`;
     document.body.appendChild(p);
     setTimeout(() => p.remove(), (i * 0.13 + 1.3) * 1000);
+  }
+}
+
+function spawnParticlesPosition(headVec_x, offsetX = 0, offsetY = -240) {
+  return [ (1 + headVec_x) / 2 * window.innerWidth + offsetX, window.innerHeight / 2 + offsetY ];
+}
+
+
+// ---- 状態警告絵文字（mood/hunger が低いとき定期表示） ----
+const WARNING_INTERVAL = 6;   // 秒
+const WARNING_DURATION = 1000; // ms
+const WARNING_THRESHOLD = 5;   // %以下で表示
+
+function spawnWarningEmoji(ch, emojis, offsetX) {
+  if (!ch.group) return;
+  const headHeight = (ch.def.modelScale ?? 2) * 1.1;
+  _headVec.set(ch.pos.x, headHeight, ch.pos.y);
+  _headVec.project(camera);
+  if (_headVec.z > 1) return;
+
+  const [sx, sy] = spawnParticlesPosition(_headVec.x, offsetX);
+  const SPACING = 36;
+  const baseX = sx + offsetX;
+
+  emojis.forEach((emoji, i) => {
+    const slotX = baseX + (i - (emojis.length - 1) / 2) * SPACING;
+    const el = document.createElement('div');
+    el.style.cssText = 'position:fixed;font-size:32px;pointer-events:none;z-index:50;transform:translate(-50%,-50%);transition:opacity 0.3s';
+    el.textContent = emoji;
+    el.style.left = `${slotX}px`;
+    el.style.top  = `${sy}px`;
+    document.body.appendChild(el);
+    setTimeout(() => { el.style.opacity = '0'; }, WARNING_DURATION - 300);
+    setTimeout(() => el.remove(), WARNING_DURATION);
+  });
+}
+
+function updateWarningEmoji(ch, delta) {
+  ch.warningTimer -= delta;
+  if (ch.warningTimer > 0) return;
+  ch.warningTimer = WARNING_INTERVAL;
+  const moodLow   = ch.mood   <= WARNING_THRESHOLD;
+  const hungerLow = ch.hunger <= WARNING_THRESHOLD;
+  if (moodLow && hungerLow) {
+    spawnWarningEmoji(ch, BAD_MOOD_EMOJIS, -12);
+    spawnWarningEmoji(ch, HUNGER_EMOJIS,    12);
+  } else if (moodLow) {
+    spawnWarningEmoji(ch, BAD_MOOD_EMOJIS, 0);
+  } else if (hungerLow) {
+    spawnWarningEmoji(ch, HUNGER_EMOJIS, 0);
   }
 }
 
@@ -437,6 +488,7 @@ function animate() {
     updatePop(ch, delta);
     updateShake(ch, delta);
     updateNpcDialogue(ch, delta);
+    updateWarningEmoji(ch, delta);
   }
 
   updateCamera();
@@ -468,15 +520,45 @@ function updatePlayerLabel() {
   updateStatusBars();
 }
 
-// mood/hunger 時間経過による減少 (1分ごと: 気分-1%, おなか-3%)
+// mood/hunger 時間経過による減少 (10秒ごと: 気分-1%, おなか-2%)
+let gameOver = false;
 setInterval(() => {
+  if (gameOver) return;
   for (const id in characters) {
     const ch = characters[id];
-    ch.hunger = Math.max(0, ch.hunger - 3);
+    ch.hunger = Math.max(0, ch.hunger - 2);
     ch.mood   = Math.max(0, ch.mood   - 1);
   }
   updateStatusBars();
-}, 60000);
+  checkGameOver();
+}, 10000);
+
+function checkGameOver() {
+  if (gameOver) return;
+  const playerDef = getPlayerDef();
+  if (!playerDef) return;
+  const playerCh = characters[playerDef.id];
+  if (!playerCh) return;
+  if (playerCh.mood === 0 && playerCh.hunger === 0) {
+    gameOver = true;
+    showGameOver(playerCh.def.name);
+  }
+}
+
+function showGameOver(name) {
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:1000;color:#fff;font-weight:bold;';
+  overlay.innerHTML = `
+    <div style="font-size:48px;margin-bottom:12px">ゲームオーバー</div>
+    <div style="font-size:18px;margin-bottom:24px">${name}がおなかペコペコで元気もゼロになっちゃった...</div>
+    <button id="reload-button" type="button">最初から</button>
+  `;
+  document.body.appendChild(overlay);
+  overlay.querySelector('#reload-button').addEventListener('click', () => {
+     overlay.querySelector('#reload-button').style.visibility = 'hidden';
+     location.reload();
+  });
+}
 
 const shop = setupShop({
   getPlayerCharacter: () => {
@@ -487,6 +569,9 @@ const shop = setupShop({
     showNotification(`${item.emoji} ${item.name}を買いました！`);
     if (moodDelta >= 0) {
       triggerPop(ch);
+      if(item.id === ch.def.favorite) {
+        spawnParticles(ch, true);
+      }
     } else {
       spawnParticles(ch, false);
       triggerShake(ch);
@@ -522,6 +607,14 @@ function approachNpc(targetId) {
   const playerCh = characters[playerDef.id];
   const targetCh = characters[targetId];
   if (!playerCh || !targetCh) return;
+
+  // 近づくと両者の気分が +10%
+  playerCh.mood = Math.min(100, playerCh.mood + 10);
+  targetCh.mood = Math.min(100, targetCh.mood + 10);
+  triggerPop(targetCh);
+  spawnParticles(targetCh, true);
+  updateStatusBars();
+
   const dx   = targetCh.pos.x - playerCh.pos.x;
   const dz   = targetCh.pos.y - playerCh.pos.y;
   const dist = Math.hypot(dx, dz);
@@ -576,16 +669,20 @@ function renderGivePanel() {
         const favMult = item.id === tCh.def.favorite ? 2 : item.id === tCh.def.dislike ? -1 : 1;
         const delta = item.getMoodGain(tCh.def.id) * favMult;
         tCh.mood   = Math.max(0, Math.min(100, tCh.mood + delta));
-        tCh.hunger = Math.min(100, tCh.hunger + item.hungerGain);
+        if (item.id !== tCh.def.dislike) {
+          tCh.hunger = Math.min(100, tCh.hunger + item.hungerGain);
+        }
         if (delta < 0) {
           spawnParticles(tCh, false);
           triggerShake(tCh);
           showReaction(tCh, 'no');
         } else if (item.id === tCh.def.favorite) {
           triggerPop(tCh);
+          spawnParticles(tCh, true);
           showReaction(tCh, 'special');
         } else {
           triggerPop(tCh);
+          spawnParticles(tCh, true);
           showReaction(tCh, 'thanks');
         }
       });
@@ -624,6 +721,7 @@ document.getElementById('change-btn').addEventListener('click', () => {
   const nextCh = characters[nextId];
   if (nextCh) nextCh.coins = Math.min(5000, nextCh.coins + 100);
   document.getElementById('shop-panel').classList.remove('open');
+  hideGiveBtn();
   updatePlayerLabel();
 });
 
@@ -640,11 +738,11 @@ function showNotification(msg, duration = 3000, isError = false) {
 
 function fmtTime() {
   const n = new Date();
-  const mm = String(n.getMonth() + 1).padStart(2, '0');
-  const dd = String(n.getDate()).padStart(2, '0');
+  const mm = String(n.getMonth() + 1);
+  const dd = String(n.getDate());
   const h = n.getHours();
   const mi = String(n.getMinutes()).padStart(2, '0');
-  return `${mm}/${dd} ${h >= 12 ? 'PM' : 'AM'} ${String(h % 12 || 12).padStart(2, '0')}:${mi}`;
+  return `${mm}/${dd} ${String(h).padStart(2, '0')}:${mi}`;
 }
 
 function updateClock() {
