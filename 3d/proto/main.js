@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import cinnamorollUrl from './models/cinnamoroll.glb?url';
-import mymelodyUrl from './models/mymelody.glb?url';
+import cinnamorollUrl from '../shared/models/cinnamoroll.glb?url';
+import mymelodyUrl from '../shared/models/mymelody.glb?url';
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x87ceeb);

@@ -4,10 +4,10 @@ import { CHARACTER_DEFS, getPlayerDef, getUnlockedDefs, switchPlayer, unlockChar
 import { buildWorld } from './world.js';
 import { setupShop, SHOP_ITEMS } from './shop.js';
 
-import cinnamorollUrl from './models/cinnamoroll.glb?url';
-import mymelodyUrl from './models/mymelody.glb?url';
-import kuromiUrl from './models/kuromi.glb?url';
-import mirukuUrl from './models/miruku.glb?url';
+import cinnamorollUrl from '../shared/models/cinnamoroll.glb?url';
+import mymelodyUrl from '../shared/models/mymelody.glb?url';
+import kuromiUrl from '../shared/models/kuromi.glb?url';
+import mirukuUrl from '../shared/models/miruku.glb?url';
 
 const MODEL_URLS = {
   cinnamoroll: cinnamorollUrl,
