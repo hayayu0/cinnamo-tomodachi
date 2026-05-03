@@ -13,7 +13,7 @@ export const CHARACTER_DEFS = [
     initPos: { x: 0, z: 0 },
     startCoins: 600,
     mood: 80,
-    hunger: 60,
+    hunger: 50,
     favorite: 'cinnamon',
     dislike: 'pepper',
     giftReactions: {

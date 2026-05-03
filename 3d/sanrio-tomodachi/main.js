@@ -55,6 +55,8 @@ const NPC_WANDER_RADIUS = 3;
 const NPC_WANDER_MIN = 4;
 const NPC_WANDER_MAX = 12;
 
+let gameOver = false;
+
 // ---- Character runtime state ----
 // characters: id -> { def, group, glowMaterials, pos(Vector2=XZ), targetPos(Vector2=XZ),
 //                     yaw, targetYaw, popProgress, wanderTimer }
@@ -372,7 +374,7 @@ function animateGift(fromCh, toCh, emoji, onArrive) {
   el.textContent = emoji;
   document.body.appendChild(el);
 
-  const duration = 850;
+  const duration = 800;
   const start = performance.now();
   function frame(now) {
     const t = Math.min((now - start) / duration, 1);
@@ -399,6 +401,10 @@ const DIALOGUE_INTERVAL_MAX = 30;
 const _headVec = new THREE.Vector3();
 
 function updateNpcDialogue(ch, delta) {
+  if (gameOver) {
+    if (ch.bubble.style.display !== 'none') ch.bubble.style.display = 'none';
+    return;
+  }
   if (ch.def.isPlayer) {
     if (ch.playerBubbleTimer > 0) {
       ch.playerBubbleTimer -= delta;
@@ -520,8 +526,6 @@ function updatePlayerLabel() {
   updateStatusBars();
 }
 
-// mood/hunger 時間経過による減少 (10秒ごと: 気分-1%, おなか-2%)
-let gameOver = false;
 setInterval(() => {
   if (gameOver) return;
   for (const id in characters) {
@@ -541,13 +545,14 @@ function checkGameOver() {
   if (!playerCh) return;
   if (playerCh.mood === 0 && playerCh.hunger === 0) {
     gameOver = true;
+    if (playerCh.group) playerCh.group.rotation.z = -Math.PI * 0.8 / 2;
     showGameOver(playerCh.def.name);
   }
 }
 
 function showGameOver(name) {
   const overlay = document.createElement('div');
-  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:1000;color:#fff;font-weight:bold;';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.25);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:1000;color:#fff;font-weight:bold;';
   overlay.innerHTML = `
     <div style="font-size:48px;margin-bottom:12px">ゲームオーバー</div>
     <div style="font-size:18px;margin-bottom:24px">${name}がおなかペコペコで元気もゼロになっちゃった...</div>
@@ -669,7 +674,9 @@ function renderGivePanel() {
         const favMult = item.id === tCh.def.favorite ? 2 : item.id === tCh.def.dislike ? -1 : 1;
         const delta = item.getMoodGain(tCh.def.id) * favMult;
         tCh.mood   = Math.max(0, Math.min(100, tCh.mood + delta));
-        if (item.id !== tCh.def.dislike) {
+        if (item.id === tCh.def.dislike) {
+          tCh.hunger = Math.max(0, tCh.hunger - 3);
+        } else {
           tCh.hunger = Math.min(100, tCh.hunger + item.hungerGain);
         }
         if (delta < 0) {
